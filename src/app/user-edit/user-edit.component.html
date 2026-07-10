@@ -44,9 +44,84 @@
   <button (click)="deleteAccount()" style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete Account</button>
 </div>
 
-<div *ngIf="activeTab === 'Groups' || activeTab === 'Tenants'">
-  <div style="padding: 40px; text-align: center; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 8px;">
-    <h3 style="color: gray;">Future Development</h3>
-    <p>The {{ activeTab }} module will be implemented in a future update.</p>
+<div *ngIf="activeTab === 'Groups'">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3>{{ profile.firstName }}'s Groups</h3>
+    <button (click)="showAddGroup = true" style="padding: 6px 12px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+      <span style="font-size: 18px; line-height: 1;">+</span> Add to a group
+    </button>
   </div>
+
+  <div *ngIf="showAddGroup" style="background: #fdfdfd; border: 1px solid #dee2e6; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+    <select [(ngModel)]="selectedGroupId" style="padding: 8px; flex: 1; border-radius: 4px; border: 1px solid #ccc;">
+      <option value="" disabled>Select a group to add...</option>
+      <option *ngFor="let g of availableGroups" [value]="g.id">{{ g.name }} ({{ g.id }})</option>
+    </select>
+    <button (click)="addGroup()" [disabled]="!selectedGroupId" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+    <button (click)="showAddGroup = false; selectedGroupId = ''" style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+  </div>
+
+  <div *ngIf="availableGroups.length === 0 && showAddGroup" style="color: gray; margin-bottom: 15px; font-style: italic;">
+    This user is already a member of all available groups.
+  </div>
+
+  <table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
+    <tr style="background-color: #f8f9fa;">
+      <th>Group ID</th>
+      <th>Group Name</th>
+      <th>Group Type</th>
+      <th style="width: 100px; text-align: center;">Action</th>
+    </tr>
+    <tr *ngFor="let group of userGroups">
+      <td style="font-weight: bold; color: #007bff;">{{ group.id }}</td>
+      <td>{{ group.name }}</td>
+      <td><span style="background: #e9ecef; padding: 3px 8px; border-radius: 4px; font-size: 14px;">{{ group.type }}</span></td>
+      <td style="text-align: center;">
+        <button (click)="removeGroup(group.id)" style="color: #007bff; background: none; border: none; cursor: pointer; text-decoration: underline;">Remove</button>
+      </td>
+    </tr>
+    <tr *ngIf="userGroups.length === 0">
+      <td colspan="4" style="text-align: center; color: gray; font-style: italic; padding: 20px;">No groups assigned to this user.</td>
+    </tr>
+  </table>
+</div>
+
+<div *ngIf="activeTab === 'Tenants'">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3>{{ profile.firstName }}'s Tenants</h3>
+    <button (click)="showAddTenant = true" style="padding: 6px 12px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+      <span style="font-size: 18px; line-height: 1;">+</span> Add to a tenant
+    </button>
+  </div>
+
+  <div *ngIf="showAddTenant" style="background: #fdfdfd; border: 1px solid #dee2e6; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+    <select [(ngModel)]="selectedTenantId" style="padding: 8px; flex: 1; border-radius: 4px; border: 1px solid #ccc;">
+      <option value="" disabled>Select a tenant to add...</option>
+      <option *ngFor="let t of availableTenants" [value]="t.id">{{ t.name }} ({{ t.id }})</option>
+    </select>
+    <button (click)="addTenant()" [disabled]="!selectedTenantId" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+    <button (click)="showAddTenant = false; selectedTenantId = ''" style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+  </div>
+
+  <div *ngIf="availableTenants.length === 0 && showAddTenant" style="color: gray; margin-bottom: 15px; font-style: italic;">
+    This user is already a member of all available tenants.
+  </div>
+
+  <table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
+    <tr style="background-color: #f8f9fa;">
+      <th>Tenant ID</th>
+      <th>Tenant Name</th>
+      <th style="width: 100px; text-align: center;">Action</th>
+    </tr>
+    <tr *ngFor="let tenant of userTenants">
+      <td style="font-weight: bold; color: #20c997;">{{ tenant.id }}</td>
+      <td>{{ tenant.name }}</td>
+      <td style="text-align: center;">
+        <button (click)="removeTenant(tenant.id)" style="color: #007bff; background: none; border: none; cursor: pointer; text-decoration: underline;">Remove</button>
+      </td>
+    </tr>
+    <tr *ngIf="userTenants.length === 0">
+      <td colspan="3" style="text-align: center; color: gray; font-style: italic; padding: 20px;">No tenants assigned to this user.</td>
+    </tr>
+  </table>
 </div>
