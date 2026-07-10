@@ -1,0 +1,40 @@
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  <h2>Edit Group: <span style="color: #e83e8c;">{{ groupId }}</span></h2>
+  <a routerLink="/admin/groups" style="padding: 8px 15px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;">&larr; Back to List</a>
+</div>
+
+<div style="display: flex; gap: 40px; align-items: flex-start;">
+  
+  <div style="flex: 1; max-width: 500px; border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #fdfdfd;">
+    <h3>Group Details</h3>
+    <div *ngIf="successMessage" style="color: white; background: #28a745; padding: 10px; border-radius: 4px; margin-bottom: 15px;">{{ successMessage }}</div>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="font-weight: bold; display: block; color: gray;">Group ID (Cannot be changed)</label>
+      <input type="text" [value]="groupData.id" disabled style="width: 100%; padding: 8px; box-sizing: border-box; background: #e9ecef; cursor: not-allowed;" />
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label style="font-weight: bold; display: block; margin-bottom: 5px;">Group Name *</label>
+      <input type="text" [(ngModel)]="groupData.name" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+    </div>
+
+    <div style="margin-bottom: 25px;">
+      <label style="font-weight: bold; display: block; margin-bottom: 5px;">Group Type *</label>
+      <select [(ngModel)]="groupData.type" style="width: 100%; padding: 8px; box-sizing: border-box; background: white;">
+        <option value="WORKFLOW">WORKFLOW</option>
+        <option value="SYSTEM">SYSTEM</option>
+        <option value="EXTERNAL">EXTERNAL</option>
+      </select>
+    </div>
+    
+    <button (click)="updateGroup()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
+  </div>
+
+  <div style="width: 300px; border: 1px solid #dc3545; padding: 20px; border-radius: 8px; background: #fff5f5;">
+    <h3 style="color: #dc3545; margin-top: 0;">Danger Zone</h3>
+    <p style="color: #555; font-size: 14px;">Deleting a group will immediately remove all users associated with it from this group context. This action cannot be undone.</p>
+    <button (click)="deleteGroup()" style="width: 100%; padding: 10px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Delete Group</button>
+  </div>
+
+</div>

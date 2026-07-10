@@ -1,0 +1,20 @@
+<div style="display: flex; justify-content: space-between; align-items: center;">
+  <h2>Group Management</h2>
+  <a routerLink="/admin/groups/create" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">+ Create New Group</a>
+</div>
+
+<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+  <tr style="background-color: #f8f9fa;">
+    <th>Group ID</th>
+    <th>Group Name</th>
+    <th>Group Type</th>
+    <th>Action</th> </tr>
+  <tr *ngFor="let group of groups">
+    <td style="font-weight: bold;">{{ group.id }}</td>
+    <td>{{ group.name }}</td>
+    <td><span style="background: #e9ecef; padding: 3px 8px; border-radius: 4px; font-size: 14px;">{{ group.type }}</span></td>
+    <td>
+      <a [routerLink]="['/admin/groups/edit', group.id]" style="padding: 5px 10px; background-color: #ffc107; color: black; text-decoration: none; border-radius: 4px;">Edit</a>
+    </td>
+  </tr>
+</table>

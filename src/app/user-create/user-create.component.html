@@ -1,0 +1,44 @@
+<h2>Create New User</h2>
+
+<div style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 500px; background: #fdfdfd;">
+  
+  <div *ngIf="errorMessage" style="color: red; background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+    {{ errorMessage }}
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label style="font-weight: bold; display: block; margin-bottom: 5px;">User ID *</label>
+    <input type="text" [(ngModel)]="userData.id" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  </div>
+
+  <div style="margin-bottom: 15px; display: flex; gap: 15px;">
+    <div style="flex: 1;">
+      <label style="font-weight: bold; display: block; margin-bottom: 5px;">First Name *</label>
+      <input type="text" [(ngModel)]="userData.firstName" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+    </div>
+    <div style="flex: 1;">
+      <label style="font-weight: bold; display: block; margin-bottom: 5px;">Last Name *</label>
+      <input type="text" [(ngModel)]="userData.lastName" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+    </div>
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Email</label>
+    <input type="email" [(ngModel)]="userData.email" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Password *</label>
+    <input type="password" [(ngModel)]="userData.password" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Repeat Password *</label>
+    <input type="password" [(ngModel)]="userData.passwordRepeat" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  </div>
+
+  <div style="display: flex; justify-content: space-between;">
+    <a routerLink="/admin/users" style="padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;">Cancel</a>
+    <button (click)="onCreateUser()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Save User</button>
+  </div>
+</div>

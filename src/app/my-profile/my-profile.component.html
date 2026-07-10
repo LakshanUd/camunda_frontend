@@ -1,0 +1,32 @@
+<h2>My Profile: <span style="color: #fd7e14;">{{ userId }}</span></h2>
+
+<div style="display: flex; border-bottom: 2px solid #ccc; margin-bottom: 20px;">
+  <button (click)="activeTab = 'Profile'" [style.borderBottom]="activeTab === 'Profile' ? '3px solid #fd7e14' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Personal Details</button>
+  <button (click)="activeTab = 'Account'" [style.borderBottom]="activeTab === 'Account' ? '3px solid #fd7e14' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Security</button>
+</div>
+
+<div *ngIf="activeTab === 'Profile'" style="max-width: 500px;">
+  <div *ngIf="profileMsg" style="color: white; background: #28a745; padding: 10px; border-radius: 4px; margin-bottom: 15px;">{{ profileMsg }}</div>
+  
+  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">First Name *</label>
+    <input type="text" [(ngModel)]="profile.firstName" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
+  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Last Name *</label>
+    <input type="text" [(ngModel)]="profile.lastName" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
+  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Email</label>
+    <input type="email" [(ngModel)]="profile.email" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
+  
+  <button (click)="updateProfile()" style="padding: 10px 20px; background-color: #fd7e14; color: white; border: none; border-radius: 4px; cursor: pointer;">Save My Profile</button>
+</div>
+
+<div *ngIf="activeTab === 'Account'" style="max-width: 500px;">
+  <div *ngIf="accountMsg" style="color: black; background: #ffc107; padding: 10px; border-radius: 4px; margin-bottom: 15px;">{{ accountMsg }}</div>
+
+  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Current Password *</label>
+    <input type="password" [(ngModel)]="passwords.current" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
+  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">New Password *</label>
+    <input type="password" [(ngModel)]="passwords.new" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
+  <div style="margin-bottom: 20px;"><label style="font-weight: bold; display: block;">Repeat New Password *</label>
+    <input type="password" [(ngModel)]="passwords.repeat" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
+  
+  <button (click)="updatePassword()" style="padding: 10px 20px; background-color: #fd7e14; color: white; border: none; border-radius: 4px; cursor: pointer;">Change Password</button>
+</div>

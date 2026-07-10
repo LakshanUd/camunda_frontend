@@ -1,0 +1,32 @@
+<h2>Create New Group</h2>
+
+<div style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 500px; background: #fdfdfd;">
+  
+  <div *ngIf="errorMessage" style="color: red; background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+    {{ errorMessage }}
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Group ID * <span style="font-weight: normal; color: gray; font-size: 12px;">(e.g., 'sales', 'management')</span></label>
+    <input type="text" [(ngModel)]="groupData.id" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Group Name * <span style="font-weight: normal; color: gray; font-size: 12px;">(e.g., 'Sales Department')</span></label>
+    <input type="text" [(ngModel)]="groupData.name" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  </div>
+
+  <div style="margin-bottom: 25px;">
+    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Group Type *</label>
+    <select [(ngModel)]="groupData.type" style="width: 100%; padding: 8px; box-sizing: border-box; background: white;">
+      <option value="WORKFLOW">WORKFLOW</option>
+      <option value="SYSTEM">SYSTEM</option>
+      <option value="EXTERNAL">EXTERNAL</option>
+    </select>
+  </div>
+
+  <div style="display: flex; justify-content: space-between;">
+    <a routerLink="/admin/groups" style="padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;">Cancel</a>
+    <button (click)="onCreateGroup()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Save Group</button>
+  </div>
+</div>

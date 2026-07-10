@@ -1,0 +1,24 @@
+<nav *ngIf="isLoggedIn()" style="background-color: #343a40; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;">
+  
+  <div>
+    <h2 style="color: white; margin: 0 0 10px 0; font-family: Arial, sans-serif;">Camunda Task Manager</h2>
+    <a routerLink="/active-tasks" style="color: white; text-decoration: none; margin-right: 10px; font-family: Arial, sans-serif; padding: 5px 10px; background: #007bff; border-radius: 4px;">Active Tasks</a>
+    <a routerLink="/completed-tasks" style="color: white; text-decoration: none; margin-right: 10px; font-family: Arial, sans-serif; padding: 5px 10px; background: #28a745; border-radius: 4px;">Completed Tasks</a>
+    <a routerLink="/processes" style="color: white; text-decoration: none; margin-right: 20px; font-family: Arial, sans-serif; padding: 5px 10px; background: #17a2b8; border-radius: 4px;">Active Processes</a>
+    
+    <span style="color: #888; margin-right: 20px;">|</span>
+    <a routerLink="/admin/users" style="color: white; text-decoration: none; margin-right: 10px; font-family: Arial, sans-serif; padding: 5px 10px; background: #6f42c1; border-radius: 4px;">Admin: Manage Users</a>
+    <a routerLink="/admin/groups" style="color: white; text-decoration: none; margin-right: 10px; font-family: Arial, sans-serif; padding: 5px 10px; background: #e83e8c; border-radius: 4px;">Admin: Groups</a>
+    <a routerLink="/admin/tenants" style="color: white; text-decoration: none; margin-right: 10px; font-family: Arial, sans-serif; padding: 5px 10px; background: #20c997; border-radius: 4px;">Admin: Tenants</a>
+    <a routerLink="/my-profile" style="color: white; text-decoration: none; font-family: Arial, sans-serif; padding: 5px 10px; background: #fd7e14; border-radius: 4px;">My Profile</a>
+  </div>
+
+  <div style="color: white; font-family: Arial, sans-serif; display: flex; align-items: center;">
+    <span style="margin-right: 15px;">Logged in as: <strong>{{ getCurrentUser() }}</strong></span>
+    <button (click)="logout()" style="padding: 5px 10px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+  </div>
+</nav>
+
+<div style="padding: 20px; font-family: Arial, sans-serif;">
+  <router-outlet></router-outlet>
+</div>

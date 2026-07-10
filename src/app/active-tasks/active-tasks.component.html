@@ -1,0 +1,31 @@
+<h2>Active Tasks</h2>
+
+<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
+  <tr style="background-color: #e6f7ff;">
+    <th>Task ID</th>
+    <th>Task Name</th>
+    <th>Process Instance</th>
+    <th>Action</th>
+  </tr>
+  <tr *ngFor="let task of activeTasks">
+    <td>{{ task.id }}</td>
+    <td>{{ task.name }}</td>
+    <td>{{ task.processInstanceId }}</td>
+    <td>
+      <button (click)="openActionForm(task)" style="padding: 5px 10px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px;">Action</button>
+    </td>
+  </tr>
+</table>
+
+<div *ngIf="selectedTask" style="position: fixed; top: 10%; left: 25%; width: 50%; height: 80vh; display: flex; flex-direction: column; background: white; padding: 30px; border: 2px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; border-radius: 8px;">
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+    <h2 style="margin: 0;">Task: {{ selectedTask.name }}</h2>
+    <button (click)="closeForm()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;" title="Close without submitting">&times;</button>
+  </div>
+  
+  <div id="camunda-form-container" style="flex-grow: 1; overflow-y: auto; margin-bottom: 20px;"></div>
+
+</div>
+
+<div *ngIf="selectedTask" (click)="closeForm()" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 999;"></div>

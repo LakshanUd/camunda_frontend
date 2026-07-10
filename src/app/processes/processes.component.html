@@ -1,0 +1,29 @@
+<h2>Active Processes</h2>
+<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
+  <tr style="background-color: #f2f2f2;">
+    <th>ID</th>
+    <th>Name</th>
+    <th>Key</th>
+    <th>Definition Version</th>
+    <th>History Time To Live</th>
+    <th>Instances Running</th>
+  </tr>
+  <tr *ngFor="let process of processes">
+    <td>{{ process.id }}</td>
+    <td>{{ process.name || 'Unnamed' }}</td>
+    <td>{{ process.key }}</td>
+    
+    <td>v{{ process.version }}</td>
+    
+    <td>{{ process.historyTimeToLive != null ? process.historyTimeToLive + ' days' : 'Not Set' }}</td>
+    
+    <td>
+      <span *ngIf="process.instanceCount !== undefined" style="font-weight: bold; color: #007bff;">
+        {{ process.instanceCount }}
+      </span>
+      <span *ngIf="process.instanceCount === undefined" style="color: gray; font-size: 0.9em;">
+        Loading...
+      </span>
+    </td>
+  </tr>
+</table>

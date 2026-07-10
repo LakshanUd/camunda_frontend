@@ -1,0 +1,7 @@
+<h2>Completed Tasks</h2>
+<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
+  <tr style="background-color: #e6ffe6;"><th>Task ID</th><th>Task Name</th><th>End Time</th></tr>
+  <tr *ngFor="let task of completedTasks">
+    <td>{{ task.id }}</td><td>{{ task.name }}</td><td>{{ task.endTime | date:'medium' }}</td>
+  </tr>
+</table>
