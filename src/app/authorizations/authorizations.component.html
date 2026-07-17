@@ -1,0 +1,106 @@
+<div style="display: flex; gap: 20px; min-height: 85vh; font-family: Arial, sans-serif;">
+  
+  <div style="width: 260px; border-right: 1px solid #ccc; padding-right: 15px;">
+    <h3 style="margin-top: 0; border-bottom: 2px solid #333; padding-bottom: 10px;">Sections</h3>
+    <ul style="list-style: none; padding: 0; margin: 0; max-height: 78vh; overflow-y: auto;">
+      <li *ngFor="let sec of sections" style="margin-bottom: 2px;">
+        <button (click)="selectSection(sec)" 
+                [style.backgroundColor]="activeSection.key === sec.key ? '#e9ecef' : 'transparent'"
+                [style.fontWeight]="activeSection.key === sec.key ? 'bold' : 'normal'"
+                [style.borderLeft]="activeSection.key === sec.key ? '4px solid #007bff' : '4px solid transparent'"
+                style="width: 100%; text-align: left; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px; border-radius: 0 4px 4px 0;">
+          {{ sec.name }}
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <div style="flex: 1;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 20px;">
+      <div>
+        <h2 style="margin: 0; color: #333;">{{ activeSection.name }} Authorizations</h2>
+        <small style="color: gray;">API Path: /api/authorizations/{{ activeSection.key }}</small>
+      </div>
+      <button (click)="openCreateModal()" style="padding: 10px 18px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        + New {{ activeSection.name }} Rule
+      </button>
+    </div>
+
+    <table border="1" cellpadding="12" style="width: 100%; border-collapse: collapse; border-color: #eee;">
+      <tr style="background-color: #f8f9fa; text-align: left; color: #555;">
+        <th>Type</th>
+        <th>User / Group</th>
+        <th>Permissions</th>
+        <th>Resource ID</th>
+        <th style="text-align: right; width: 140px;">Actions</th>
+      </tr>
+      <tr *ngFor="let auth of authorizations">
+        <td style="font-weight: bold;" [style.color]="auth.type === 1 ? '#28a745' : '#dc3545'">
+          {{ auth.type === 1 ? 'ALLOW' : (auth.type === 2 ? 'DENY' : 'GLOBAL') }}
+        </td>
+        <td>
+          <span *ngIf="auth.userId" style="color: #007bff;">&#128100; {{ auth.userId }}</span>
+          <span *ngIf="auth.groupId" style="color: #6f42c1;">&#128101; {{ auth.groupId }}</span>
+        </td>
+        <td style="font-family: monospace; font-size: 13px;">{{ auth.permissions.join(', ') }}</td>
+        <td style="font-family: monospace;">{{ auth.resourceId }}</td>
+        <td style="text-align: right; white-space: nowrap;">
+          <button (click)="openEditModal(auth)" style="color: #ffc107; background: none; border: none; cursor: pointer; text-decoration: underline; font-weight: bold; margin-right: 12px;">Edit</button>
+          <button (click)="deleteAuth(auth.id)" style="color: #dc3545; background: none; border: none; cursor: pointer; text-decoration: underline;">Delete</button>
+        </td>
+      </tr>
+      <tr *ngIf="authorizations.length === 0">
+        <td colspan="5" style="text-align: center; color: gray; font-style: italic; padding: 40px;">
+          No rules configured in the {{ activeSection.name }} section.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div *ngIf="showModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+  <div style="background: white; padding: 30px; border-radius: 8px; width: 480px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+    <h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #333;">
+      {{ isEditMode ? 'Edit' : 'New' }} {{ activeSection.name }} Rule
+    </h3>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; font-weight: bold; margin-bottom: 5px;">Rule Type</label>
+      <select [(ngModel)]="formData.type" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <option [value]="1">ALLOW (GRANT)</option>
+        <option [value]="2">DENY (REVOKE)</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+      <div style="flex: 1;">
+        <label style="display: block; font-weight: bold; margin-bottom: 5px;">User ID</label>
+        <input type="text" [(ngModel)]="formData.userId" placeholder="e.g. john" [disabled]="formData.groupId !== ''" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;" />
+      </div>
+      <div style="flex: 1;">
+        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Or Group ID</label>
+        <input type="text" [(ngModel)]="formData.groupId" placeholder="e.g. accounting" [disabled]="formData.userId !== ''" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;" />
+      </div>
+    </div>
+    <small style="color: gray; display: block; margin-top: -10px; margin-bottom: 15px;">Supply either User ID or Group ID, never both.</small>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; font-weight: bold; margin-bottom: 5px;">Resource ID</label>
+      <input type="text" [(ngModel)]="formData.resourceId" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;" />
+      <small style="color: gray;">Use * to apply this rule globally within {{ activeSection.name }}.</small>
+    </div>
+
+    <div style="margin-bottom: 25px;">
+      <label style="display: block; font-weight: bold; margin-bottom: 5px;">Permissions (Comma Separated)</label>
+      <input type="text" [(ngModel)]="formData.permissionsStr" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: monospace;" />
+      <small style="color: gray;">Suggested perms for this section: <strong>{{ activeSection.defaultPerms }}</strong></small>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #eee; padding-top: 20px;">
+      <button (click)="showModal = false" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+      <button (click)="save()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        {{ isEditMode ? 'Save Changes' : 'Create Rule' }}
+      </button>
+    </div>
+  </div>
+</div>

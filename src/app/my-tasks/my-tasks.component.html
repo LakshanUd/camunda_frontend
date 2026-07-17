@@ -1,0 +1,98 @@
+<div style="padding: 20px; font-family: Arial, sans-serif;">
+  <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
+    <h2 style="margin: 0; color: #333;">My Assigned Tasks</h2>
+    <small style="color: gray;">Showing active tasks directly assigned to: <strong>{{ authService.getCurrentUserId() }}</strong></small>
+  </div>
+
+  <div *ngIf="loading" style="padding: 20px; text-align: center; color: gray;">Loading your tasks...</div>
+
+  <table *ngIf="!loading" border="1" cellpadding="12" style="width: 100%; border-collapse: collapse; border-color: #eee;">
+    <tr style="background-color: #f8f9fa; text-align: left; color: #555;">
+      <th>Task ID</th>
+      <th>Task Name</th>
+      <th>Created Date</th>
+      <th style="text-align: right; width: 180px;">Action</th>
+    </tr>
+    <tr *ngFor="let task of tasks">
+      <td style="font-family: monospace; color: #6c757d;">{{ task.id }}</td>
+      <td style="font-weight: bold; color: #007bff;">{{ task.name }}</td>
+      <td>{{ task.created | date:'medium' }}</td>
+      <td style="text-align: right;">
+        <button (click)="openCompleteModal(task)" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+          Open / Do Task &#9998;
+        </button>
+      </td>
+    </tr>
+    <tr *ngIf="tasks.length === 0">
+      <td colspan="4" style="text-align: center; color: gray; font-style: italic; padding: 40px;">
+        You have no active tasks assigned to you. Enjoy your day!
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- DYNAMIC 2-STEP TASK & ROUTING MODAL -->
+<div *ngIf="showCompleteModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+  <div style="background: white; padding: 25px; border-radius: 8px; width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-family: Arial, sans-serif;">
+    
+    <!-- HEADER -->
+    <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; color: #333;">{{ selectedTaskName }}</h3>
+      <span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+        Step {{ step }} of 2: {{ step === 1 ? 'Fill Form' : 'Route Stage' }}
+      </span>
+    </div>
+
+    <!-- STEP 1: NATIVE @BPMN-IO/FORM-JS CONTAINER -->
+    <div *ngIf="step === 1">
+      <div *ngIf="loadingForm" style="text-align: center; color: gray; padding: 30px;">
+        Loading native Camunda form...
+      </div>
+
+      <div *ngIf="!loadingForm && !hasFormSchema" style="background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; border-radius: 6px; margin-bottom: 20px; border: 1px solid #e9ecef;">
+        <em>No native JSON form deployed for this task in Modeler. You may proceed directly to routing.</em>
+      </div>
+
+      <!-- THIS DIV IS WHERE @BPMN-IO/FORM-JS RENDERS THE EXACT CAMUNDA FORM -->
+      <div id="camunda-form-container" style="margin-bottom: 25px; min-height: 50px;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #eee; padding-top: 15px;">
+        <button (click)="showCompleteModal = false" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancel</button>
+        <button (click)="proceedToRouting()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+          Proceed to Route Next Stage &#10148;
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: ROUTE NEXT STAGE TO -->
+    <div *ngIf="step === 2">
+      <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin-bottom: 25px; border: 1px solid #ffeeba;">
+        <label style="display: block; font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #856404;">
+          &#10148; Select Who Should Review Next Stage (Optional):
+        </label>
+        <select [(ngModel)]="nextReviewer" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+          <option value="">-- Let engine decide / Default --</option>
+          <option *ngFor="let u of users" [value]="u.id">
+            {{ u.firstName }} {{ u.lastName }} ({{ u.id }})
+          </option>
+        </select>
+        <small style="color: #856404; display: block; margin-top: 8px; font-size: 12px;">
+          Sets variable <code>{{ '${nextReviewer}' }}</code> for the next BPMN step. Form data captured in Step 1 will be submitted simultaneously.
+        </small>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 15px;">
+        <button (click)="step = 1" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+          &#9664; Back to Form
+        </button>
+        <div style="display: flex; gap: 10px;">
+          <button (click)="showCompleteModal = false" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Cancel</button>
+          <button (click)="confirmComplete()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+            Submit Work & Complete &#10004;
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

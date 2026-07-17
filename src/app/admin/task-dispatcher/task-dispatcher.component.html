@@ -1,0 +1,80 @@
+<div style="padding: 20px; font-family: Arial, sans-serif;">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+    <div>
+      <h2 style="margin: 0; color: #333;">Admin Task Command Center</h2>
+      <small style="color: gray;">Global dispatcher and reassignment controller</small>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button (click)="switchTab('unassigned')" 
+              [style.background]="activeTab === 'unassigned' ? '#007bff' : '#e9ecef'"
+              [style.color]="activeTab === 'unassigned' ? 'white' : '#333'"
+              style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        &#128229; Unassigned Group Pools
+      </button>
+      <button (click)="switchTab('global')" 
+              [style.background]="activeTab === 'global' ? '#6f42c1' : '#e9ecef'"
+              [style.color]="activeTab === 'global' ? 'white' : '#333'"
+              style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        &#128196; All Company Tasks
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" style="padding: 20px; text-align: center; color: gray;">Loading queue...</div>
+
+  <table *ngIf="!loading" border="1" cellpadding="12" style="width: 100%; border-collapse: collapse; border-color: #eee;">
+    <tr style="background-color: #f8f9fa; text-align: left; color: #555;">
+      <th>Task ID</th>
+      <th>Task Name</th>
+      <th>Current Owner</th>
+      <th>Created Date</th>
+      <th style="text-align: right; width: 150px;">Action</th>
+    </tr>
+    <tr *ngFor="let task of tasks">
+      <td style="font-family: monospace; color: #6c757d;">{{ task.id }}</td>
+      <td style="font-weight: bold;">{{ task.name }}</td>
+      <td>
+        <span *ngIf="task.assignee" style="color: #28a745; font-weight: bold;">&#128100; {{ task.assignee }}</span>
+        <span *ngIf="!task.assignee" style="color: #dc3545; font-style: italic;">Unassigned (In Pool)</span>
+      </td>
+      <td>{{ task.created | date:'medium' }}</td>
+      <td style="text-align: right;">
+        <button (click)="openAssignModal(task)" style="padding: 6px 12px; background: #ffc107; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+          {{ task.assignee ? 'Reassign' : 'Dispatch' }} &#10148;
+        </button>
+      </td>
+    </tr>
+    <tr *ngIf="tasks.length === 0">
+      <td colspan="5" style="text-align: center; color: gray; font-style: italic; padding: 40px;">
+        No tasks found in this queue.
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div *ngIf="showModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+  <div style="background: white; padding: 30px; border-radius: 8px; width: 420px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+    <h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #333;">
+      Dispatch Task
+    </h3>
+    <p style="margin-bottom: 15px; color: #555;">Select an employee to take ownership of: <br><strong>{{ selectedTaskName }}</strong></p>
+
+    <div style="margin-bottom: 25px;">
+      <label style="display: block; font-weight: bold; margin-bottom: 5px;">Assign To User:</label>
+      <select [(ngModel)]="targetUserId" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+        <option value="">-- Release back to unassigned pool --</option>
+        <option *ngFor="let u of users" [value]="u.id">
+          {{ u.firstName }} {{ u.lastName }} ({{ u.id }})
+        </option>
+      </select>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #eee; padding-top: 20px;">
+      <button (click)="showModal = false" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+      <button (click)="confirmAssignment()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        Confirm Assignment
+      </button>
+    </div>
+  </div>
+</div>

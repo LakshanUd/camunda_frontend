@@ -1,31 +1,21 @@
 import { Component } from '@angular/core';
-import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common'; // Needed for *ngIf
+import { RouterModule } from '@angular/router'; // Needed for routerLink and RouterOutlet
+import { AuthService } from './auth.service';   // 1. Import your new RBAC Security Service
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterModule, CommonModule], 
+  imports: [CommonModule, RouterModule], 
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'Camunda Task Manager';
+  title = 'Camunda Enterprise Workflow';
 
-  constructor(private router: Router) {}
+  // 2. Inject AuthService as 'public' so app.component.html can read role flags and session data directly
+  constructor(public authService: AuthService) {}
 
-  // Checks if 'loggedInUser' exists in the browser storage
-  isLoggedIn(): boolean {
-    return localStorage.getItem('loggedInUser') !== null;
-  }
-
-  // Gets the currently logged-in user ID
-  getCurrentUser(): string {
-    return localStorage.getItem('loggedInUser') || '';
-  }
-
-  logout() {
-    localStorage.removeItem('loggedInUser'); // Erase the session
-    this.router.navigate(['/login']); // Kick them back to login screen
-  }
+  /* Note: Old manual localStorage methods (isLoggedIn, getCurrentUser, logout) 
+     have been removed because they are now centralized and secured inside AuthService! */
 }
