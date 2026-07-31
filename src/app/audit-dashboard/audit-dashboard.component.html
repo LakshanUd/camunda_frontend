@@ -1,0 +1,133 @@
+<div style="padding: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; min-height: 100vh;">
+  
+  <!-- DASHBOARD HEADER -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <div>
+      <h1 style="margin: 0; color: #1e293b; font-size: 26px; font-weight: 700;">&#128193; System Activity & Audit Dashboard</h1>
+      <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Real-time tracking of workflow executions, user modifications, and API telemetry.</p>
+    </div>
+    <button (click)="loadAuditLogs()" style="padding: 10px 18px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px;">
+      &#8635; Refresh Live Telemetry
+    </button>
+  </div>
+
+  <!-- SECTION 1: EXECUTIVE METRIC CARDS -->
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+    <div style="background: white; padding: 22px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 5px solid #0284c7;">
+      <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase;">Total Recorded Events</span>
+      <h2 style="margin: 8px 0 0 0; color: #0f172a; font-size: 32px; font-weight: 700;">{{ totalActivities }}</h2>
+    </div>
+
+    <div style="background: white; padding: 22px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 5px solid #10b981;">
+      <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase;">Unique Active Users</span>
+      <h2 style="margin: 8px 0 0 0; color: #0f172a; font-size: 32px; font-weight: 700;">{{ activeUsersCount }}</h2>
+    </div>
+
+    <div style="background: white; padding: 22px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 5px solid #ef4444;">
+      <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase;">System Exceptions / Errors</span>
+      <h2 style="margin: 8px 0 0 0; color: #ef4444; font-size: 32px; font-weight: 700;">{{ errorCount }}</h2>
+    </div>
+  </div>
+
+  <!-- SECTION 2: LIVE FILTER & SEARCH BAR -->
+  <div style="background: white; padding: 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+    <div style="flex: 2; min-width: 250px;">
+      <input type="text" [(ngModel)]="searchTerm" (input)="applyFilters()" placeholder="&#128269; Search logs by keyword, ID, or IP address..." 
+             style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none;">
+    </div>
+
+    <div style="flex: 1; min-width: 180px;">
+      <select [(ngModel)]="selectedUserFilter" (change)="applyFilters()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; color: #334155; background: white;">
+        <option value="">-- Filter by All Users --</option>
+        <option *ngFor="let u of getUniqueUsers()" [value]="u">{{ u }}</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 180px;">
+      <select [(ngModel)]="selectedActionFilter" (change)="applyFilters()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; color: #334155; background: white;">
+        <option value="">-- Filter by All Actions --</option>
+        <option value="POST">POST (Modifications)</option>
+        <option value="GET">GET (Read Access)</option>
+        <option value="LOGIN">LOGIN (Auth Events)</option>
+        <option value="FAILED">FAILED (Errors Only)</option>
+      </select>
+    </div>
+
+    <button (click)="resetFilters()" style="padding: 10px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+      Reset
+    </button>
+  </div>
+
+  <!-- SECTION 3: DATA-DENSE EXECUTIVE ACTIVITY GRID -->
+  <div style="background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+    <div *ngIf="loading" style="padding: 40px; text-align: center; color: #64748b; font-size: 16px;">
+      &#8987; Loading system telemetry from MySQL...
+    </div>
+
+    <table *ngIf="!loading" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+      <thead>
+        <tr style="background-color: #f8fafc; color: #475569; font-weight: 700; border-bottom: 2px solid #e2e8f0;">
+          <th style="padding: 14px 18px;">Timestamp</th>
+          <th style="padding: 14px 18px;">User Actor</th>
+          <th style="padding: 14px 18px;">Action / Endpoint</th>
+          <th style="padding: 14px 18px;">Target Resource</th>
+          <th style="padding: 14px 18px;">Resource ID</th>
+          <th style="padding: 14px 18px;">IP Address</th>
+          <th style="padding: 14px 18px;">Execution Result / Payload</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of filteredLogs" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+          
+          <!-- Timestamp -->
+          <td style="padding: 14px 18px; color: #64748b; font-family: monospace; white-space: nowrap;">
+            {{ log.timestamp | date:'yyyy-MM-dd HH:mm:ss' }}
+          </td>
+
+          <!-- User Actor Badge -->
+          <td style="padding: 14px 18px; font-weight: 600;">
+            <span [ngStyle]="{'background-color': log.userId === 'ANONYMOUS' ? '#f1f5f9' : '#e0f2fe', 'color': log.userId === 'ANONYMOUS' ? '#64748b' : '#0369a1'}" 
+                  style="padding: 4px 10px; border-radius: 12px; font-size: 12px; display: inline-block;">
+              &#128100; {{ log.userId }}
+            </span>
+          </td>
+
+          <!-- Action Type Pill -->
+          <td style="padding: 14px 18px; font-weight: bold;">
+            <span *ngIf="log.actionType.includes('GET')" style="color: #0284c7;">{{ log.actionType }}</span>
+            <span *ngIf="log.actionType.includes('POST') && !log.actionType.includes('FAILED')" style="color: #10b981;">{{ log.actionType }}</span>
+            <span *ngIf="log.actionType.includes('FAILED')" style="background: #fee2e2; color: #dc2626; padding: 3px 8px; border-radius: 4px;">&#9888; {{ log.actionType }}</span>
+          </td>
+
+          <!-- Target Resource -->
+          <td style="padding: 14px 18px; color: #334155; font-weight: 600;">
+            {{ log.targetResource }}
+          </td>
+
+          <!-- Resource ID -->
+          <td style="padding: 14px 18px; font-family: monospace; color: #475569;">
+            {{ log.resourceId || '—' }}
+          </td>
+
+          <!-- IP Address -->
+          <td style="padding: 14px 18px; color: #64748b; font-family: monospace;">
+            {{ log.ipAddress }}
+          </td>
+
+          <!-- Execution Payload (Truncated & Expandable) -->
+          <td style="padding: 14px 18px; color: #475569; max-width: 350px;">
+            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; background: #f8fafc; padding: 6px 10px; border-radius: 4px; border: 1px solid #e2e8f0;" [title]="log.newValue">
+              {{ log.newValue }}
+            </div>
+          </td>
+
+        </tr>
+        <tr *ngIf="filteredLogs.length === 0">
+          <td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8; font-style: italic;">
+            No audit telemetry matches your selected search filters.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

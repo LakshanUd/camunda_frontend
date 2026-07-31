@@ -24,12 +24,14 @@ import { TenantEditComponent } from './tenant-edit/tenant-edit.component';
 import { AuthorizationsComponent } from './authorizations/authorizations.component';
 
 import { MyTasksComponent } from './my-tasks/my-tasks.component';
+import { AuditDashboardComponent } from './audit-dashboard/audit-dashboard.component';
 import { TaskDispatcherComponent } from './admin/task-dispatcher/task-dispatcher.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
 
   { path: 'my-tasks', component: MyTasksComponent },
+  { path: 'audit-logs', component: AuditDashboardComponent },
 
   { path: 'processes', component: ProcessesComponent },
   { path: 'active-tasks', component: ActiveTasksComponent },

@@ -6,6 +6,7 @@
   <div style="display: flex; gap: 15px; align-items: center;">
     
     <a *ngIf="authService.isLoggedIn()" routerLink="/my-tasks" style="color: white; text-decoration: none; padding: 6px 12px; background: #007bff; border-radius: 4px; font-weight: bold;">My Tasks</a>
+    <a routerLink="/audit-logs" routerLinkActive="active-link" style="text-decoration: none; color: #0284c7; font-weight: bold; background: #e0f2fe; padding: 6px 12px; border-radius: 6px;">&#128193; Activity & Audit Logs</a>
 
     <ng-container *ngIf="authService.isLoggedIn() && authService.isAdmin()">
       <span style="color: #6c757d;">|</span>
