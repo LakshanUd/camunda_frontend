@@ -1,21 +1,22 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common'; // Needed for *ngIf
-import { RouterModule } from '@angular/router'; // Needed for routerLink and RouterOutlet
-import { AuthService } from './auth.service';   // 1. Import your new RBAC Security Service
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { AuthService } from './auth.service';
+import { LoginComponent } from './login/login.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterModule], 
+  imports: [CommonModule, RouterModule, LoginComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'Camunda Enterprise Workflow';
+  title = 'Camunda Enterprise Platform';
 
-  // 2. Inject AuthService as 'public' so app.component.html can read role flags and session data directly
   constructor(public authService: AuthService) {}
 
-  /* Note: Old manual localStorage methods (isLoggedIn, getCurrentUser, logout) 
-     have been removed because they are now centralized and secured inside AuthService! */
+  logout(): void {
+    this.authService.logout();
+  }
 }

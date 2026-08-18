@@ -1,0 +1,116 @@
+<div style="font-family: var(--font-family); animation: fadeIn 0.3s;">
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <div>
+      <h1 style="margin: 0; color: #1e293b; font-size: 26px; font-weight: 700;">Admin Command Center</h1>
+      <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Monitor global workflow execution and dispatch tasks from the department queues.</p>
+    </div>
+    <p-button icon="pi pi-refresh" label="Refresh Data" (onClick)="loadTasks()" styleClass="p-button-outlined p-button-secondary"></p-button>
+  </div>
+
+  <!-- CUSTOM TAB BAR -->
+  <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+    <button (click)="activeTab = 'UNASSIGNED'" [ngStyle]="{'background': activeTab === 'UNASSIGNED' ? '#0f172a' : '#f1f5f9', 'color': activeTab === 'UNASSIGNED' ? '#fff' : '#64748b'}" style="padding: 10px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+      <i class="pi pi-inbox" style="margin-right: 8px;"></i> Unassigned Pool
+      <span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px;">{{ unassignedTasks.length }}</span>
+    </button>
+    <button (click)="activeTab = 'ASSIGNED'" [ngStyle]="{'background': activeTab === 'ASSIGNED' ? '#0284c7' : '#f1f5f9', 'color': activeTab === 'ASSIGNED' ? '#fff' : '#64748b'}" style="padding: 10px 20px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+      <i class="pi pi-users" style="margin-right: 8px;"></i> Global Assigned Tasks
+    </button>
+  </div>
+
+  <!-- TABLE: UNASSIGNED TASKS -->
+  <div *ngIf="activeTab === 'UNASSIGNED'" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; padding: 15px;">
+    <p-table [value]="unassignedTasks" [loading]="loading" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="name">Task Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th>Process Instance</th>
+          <th pSortableColumn="created">Creation Date <p-sortIcon field="created"></p-sortIcon></th>
+          <th style="width: 150px; text-align: right;">Action</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-task>
+        <tr>
+          <td style="font-weight: 600; color: #1e293b;">{{ task.name }}</td>
+          <td style="font-family: monospace; color: #64748b;">{{ task.processInstanceId | slice:0:13 }}...</td>
+          <td style="color: #64748b;">{{ task.created | date:'medium' }}</td>
+          <td style="text-align: right;">
+            <p-button icon="pi pi-user-plus" label="Dispatch" size="small" (onClick)="openAssignModal(task)" styleClass="p-button-sm p-button-info"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="4" style="text-align: center; padding: 30px; color: #94a3b8;">No unassigned tasks currently in the pool.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- TABLE: ASSIGNED TASKS -->
+  <div *ngIf="activeTab === 'ASSIGNED'" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; padding: 15px;">
+    <p-table [value]="assignedTasks" [loading]="loading" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="name">Task Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th>Assignee</th>
+          <th pSortableColumn="created">Creation Date <p-sortIcon field="created"></p-sortIcon></th>
+          <th style="width: 150px; text-align: right;">Action</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-task>
+        <tr>
+          <td style="font-weight: 600;">{{ task.name }}</td>
+          <td>
+            <p-tag [value]="task.assignee || 'Unknown'" severity="success" icon="pi pi-user"></p-tag>
+          </td>
+          <td style="color: #64748b;">{{ task.created | date:'medium' }}</td>
+          <td style="text-align: right;">
+             <p-button icon="pi pi-sync" label="Reassign" size="small" (onClick)="openAssignModal(task)" styleClass="p-button-sm p-button-secondary p-button-text"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- ADVANCED ASSIGNMENT MODAL -->
+  <p-dialog header="Dispatch Task: {{ selectedTask?.name }}" [(visible)]="displayAssignModal" [modal]="true" [style]="{width: '500px'}" [draggable]="false" [resizable]="false">
+    
+    <p style="color: #64748b; font-size: 14px; margin-bottom: 25px;">Select an assignment strategy for this workflow step.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      
+      <!-- Option 1: User -->
+      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+        <p-radioButton name="assignMethod" value="USER" [(ngModel)]="assignmentMethod" inputId="opt1"></p-radioButton>
+        <div style="flex-grow: 1;">
+          <label for="opt1" style="font-weight: 600; color: #1e293b; display: block; margin-bottom: 5px;">Specific Employee</label>
+          <p-select *ngIf="assignmentMethod === 'USER'" [options]="users" [(ngModel)]="selectedUser" optionLabel="id" placeholder="Select a user..." styleClass="w-full" [style]="{'width':'100%'}"></p-select>
+        </div>
+      </div>
+
+      <!-- Option 2: Group (For Phase 3 mapping) -->
+      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+        <p-radioButton name="assignMethod" value="GROUP" [(ngModel)]="assignmentMethod" inputId="opt2"></p-radioButton>
+        <div style="flex-grow: 1;">
+          <label for="opt2" style="font-weight: 600; color: #1e293b; display: block;">Specific Department</label>
+          <p style="margin: 0; font-size: 12px; color: #64748b;">Forward to a departmental queue.</p>
+        </div>
+      </div>
+
+      <!-- Option 3: Auto-Dispatch -->
+      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; border: 1px solid #10b981; border-radius: 8px; background: #ecfdf5;">
+        <p-radioButton name="assignMethod" value="AUTO" [(ngModel)]="assignmentMethod" inputId="opt3"></p-radioButton>
+        <div style="flex-grow: 1;">
+          <label for="opt3" style="font-weight: 600; color: #065f46; display: block;">Auto-Dispatch (Round Robin)</label>
+          <p style="margin: 0; font-size: 12px; color: #047857;">Let the system calculate the least-burdened employee.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <ng-template pTemplate="footer">
+        <p-button icon="pi pi-times" (onClick)="displayAssignModal = false" label="Cancel" styleClass="p-button-text p-button-secondary"></p-button>
+        <p-button icon="pi pi-check" (onClick)="confirmAssignment()" label="Confirm Dispatch" styleClass="p-button-primary"></p-button>
+    </ng-template>
+  </p-dialog>
+</div>

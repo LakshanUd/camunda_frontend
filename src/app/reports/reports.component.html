@@ -1,0 +1,60 @@
+<div style="animation: fadeIn 0.3s; padding-bottom: 30px;">
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <div>
+      <h1 style="margin: 0; color: #1e293b; font-size: 26px; font-weight: 700;">Data & Reports Hub</h1>
+      <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Generate, filter, and export the comprehensive business ledger.</p>
+    </div>
+  </div>
+
+  <div style="background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+    
+    <!-- PRIMENG TOOLBAR (Search & Export) -->
+    <p-toolbar styleClass="mb-4 gap-2" [style]="{'border':'none', 'border-bottom':'1px solid #e2e8f0', 'background':'#f8fafc'}">
+      <ng-template pTemplate="left">
+        <span class="p-input-icon-left" style="width: 300px;">
+          <i class="pi pi-search"></i>
+          <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Search business data globally..." style="width: 100%; padding-left: 2.5rem;" />
+        </span>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <!-- THE EXPORT BUTTON -->
+        <p-button icon="pi pi-file-excel" label="Export Ledger to CSV" severity="success" (onClick)="dt.exportCSV()" styleClass="p-button-sm"></p-button>
+      </ng-template>
+    </p-toolbar>
+
+    <!-- EXPORTABLE DATA TABLE -->
+    <p-table #dt [value]="ledgerData" [columns]="dynamicColumns" [loading]="loading" 
+             [paginator]="true" [rows]="15" [exportFilename]="'Business_Operations_Ledger'"
+             styleClass="p-datatable-sm p-datatable-striped p-datatable-gridlines"
+             [globalFilterFields]="dynamicColumns.map(c => c.field)">
+             
+      <ng-template pTemplate="header" let-columns>
+        <tr>
+          <th *ngFor="let col of columns" [pSortableColumn]="col.field" style="white-space: nowrap;">
+            {{ col.header }} <p-sortIcon [field]="col.field"></p-sortIcon>
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-rowData let-columns="columns">
+        <tr>
+          <td *ngFor="let col of columns" style="color: #334155;">
+            <span *ngIf="col.field === 'Process ID'" style="font-family: monospace; color: #64748b; font-size: 12px;">{{ rowData[col.field] | slice:0:15 }}...</span>
+            <span *ngIf="col.field !== 'Process ID'">{{ rowData[col.field] || '—' }}</span>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="dynamicColumns.length" style="text-align: center; padding: 40px; color: #94a3b8;">
+            No business records found.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+  </div>
+</div>

@@ -3,86 +3,94 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
+// PrimeNG Modules
+import { ChartModule } from 'primeng/chart';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { InputTextModule } from 'primeng/inputtext';
+
 @Component({
   selector: 'app-audit-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ChartModule, TableModule, TagModule, InputTextModule],
   templateUrl: './audit-dashboard.component.html',
   styleUrls: ['./audit-dashboard.component.css']
 })
 export class AuditDashboardComponent implements OnInit {
+  // Audit Log State
   logs: any[] = [];
-  filteredLogs: any[] = [];
-  loading = true;
+  loadingLogs = true;
 
-  // Filter & Search State
-  searchTerm = '';
-  selectedUserFilter = '';
-  selectedActionFilter = '';
-
-  // Executive Metric Cards
-  totalActivities = 0;
-  activeUsersCount = 0;
-  errorCount = 0;
+  // Executive KPIs
+  kpis = { total: 0, completed: 0, pending: 0 };
+  
+  // Chart Data Configurations
+  workloadChartData: any;
+  decisionChartData: any;
+  chartOptions: any;
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    this.initChartOptions();
+    this.loadAnalytics();
     this.loadAuditLogs();
   }
 
+  loadAnalytics(): void {
+    this.http.get<any>('http://localhost:8082/api/analytics/dashboard').subscribe({
+      next: (data) => {
+        this.kpis = data.kpis;
+        
+        // Map Backend Workload Data -> PrimeNG Bar Chart
+        this.workloadChartData = {
+          labels: Object.keys(data.workload),
+          datasets: [{
+            label: 'Active Tasks',
+            backgroundColor: '#0ea5e9',
+            data: Object.values(data.workload)
+          }]
+        };
+
+        // Map Backend Decision Data -> PrimeNG Pie Chart
+        this.decisionChartData = {
+          labels: Object.keys(data.decisions),
+          datasets: [{
+            data: Object.values(data.decisions),
+            backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#64748b']
+          }]
+        };
+      },
+      error: (err) => console.error('Failed to load analytics', err)
+    });
+  }
+
   loadAuditLogs(): void {
-    this.loading = true;
+    this.loadingLogs = true;
     this.http.get<any[]>('http://localhost:8082/api/audit/logs').subscribe({
       next: (data) => {
         this.logs = data || [];
-        this.filteredLogs = [...this.logs];
-        this.calculateMetrics();
-        this.loading = false;
+        this.loadingLogs = false;
       },
       error: (err) => {
         console.error('Failed to load audit logs:', err);
-        this.loading = false;
+        this.loadingLogs = false;
       }
     });
   }
 
-  calculateMetrics(): void {
-    this.totalActivities = this.logs.length;
-    
-    // Calculate unique active users
-    const uniqueUsers = new Set(this.logs.map(log => log.userId).filter(u => u && u !== 'ANONYMOUS'));
-    this.activeUsersCount = uniqueUsers.size;
+  initChartOptions(): void {
+    const documentStyle = getComputedStyle(document.documentElement);
+    const textColor = documentStyle.getPropertyValue('--text-color');
+    const textColorSecondary = documentStyle.getPropertyValue('--text-color-secondary');
+    const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
 
-    // Calculate failed executions
-    this.errorCount = this.logs.filter(log => log.actionType && log.actionType.includes('_FAILED')).length;
-  }
-
-  // Instant Client-Side Search & Filtering
-  applyFilters(): void {
-    this.filteredLogs = this.logs.filter(log => {
-      const matchesSearch = !this.searchTerm || 
-        JSON.stringify(log).toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchesUser = !this.selectedUserFilter || 
-        log.userId.toLowerCase() === this.selectedUserFilter.toLowerCase();
-        
-      const matchesAction = !this.selectedActionFilter || 
-        log.actionType.toLowerCase().includes(this.selectedActionFilter.toLowerCase());
-
-      return matchesSearch && matchesUser && matchesAction;
-    });
-  }
-
-  resetFilters(): void {
-    this.searchTerm = '';
-    this.selectedUserFilter = '';
-    this.selectedActionFilter = '';
-    this.filteredLogs = [...this.logs];
-  }
-
-  // Helper to extract clean user lists for the dropdown
-  getUniqueUsers(): string[] {
-    return Array.from(new Set(this.logs.map(log => log.userId).filter(Boolean)));
+    this.chartOptions = {
+      plugins: { legend: { labels: { color: textColor } } },
+      scales: {
+        x: { ticks: { color: textColorSecondary }, grid: { color: surfaceBorder } },
+        y: { ticks: { color: textColorSecondary, stepSize: 1 }, grid: { color: surfaceBorder } }
+      }
+    };
   }
 }

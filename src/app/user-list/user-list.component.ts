@@ -3,10 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
+// 1. Import the PrimeNG UI Modules
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  // 2. Inject them into the standalone imports array
+  imports: [CommonModule, RouterModule, TableModule, ButtonModule],
   templateUrl: './user-list.component.html',
   styleUrls: ['./user-list.component.css']
 })

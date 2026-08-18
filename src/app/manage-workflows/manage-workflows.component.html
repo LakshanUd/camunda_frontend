@@ -1,0 +1,196 @@
+<div style="animation: fadeIn 0.3s;">
+  <div style="margin-bottom: 25px;">
+    <h1 style="margin: 0; color: #1e293b; font-size: 26px; font-weight: 700;">Workflow Assignment Engine</h1>
+    <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Map operational processes to your workforce.</p>
+  </div>
+
+  <div style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 20px;">
+
+    <!-- VIEW 1: ASSIGN WORKFLOWS FOR USER -->
+    <div *ngIf="activeView === 'USER_WORKFLOW'">
+      <h3 style="margin: 0 0 15px 0; color: #1e293b;">Assign Workflows to Users</h3>
+      <p-table [value]="users" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-striped">
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="id">Username <p-sortIcon field="id"></p-sortIcon></th>
+            <th>Email</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td style="font-weight: 600;">{{ user.id }}</td>
+            <td style="color: #64748b;">{{ user.email }}</td>
+            <td style="text-align: right;">
+              <p-button label="Assign Workflows" icon="pi pi-sitemap" size="small" (onClick)="openUserWorkflowModal(user)"></p-button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- VIEW 2: ASSIGN USERS FOR WORKFLOW -->
+    <div *ngIf="activeView === 'WORKFLOW_USER'">
+      <h3 style="margin: 0 0 15px 0; color: #1e293b;">Manage Assigned Users per Workflow</h3>
+      <p-table [value]="workflows" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-striped">
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name">Workflow Name <p-sortIcon field="name"></p-sortIcon></th>
+            <th pSortableColumn="id">Process ID <p-sortIcon field="id"></p-sortIcon></th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-wf>
+          <tr>
+            <td style="font-weight: 600;">{{ wf.name }}</td>
+            <td style="font-family: monospace; color: #64748b;">{{ wf.id }}</td>
+            <td style="text-align: right;">
+              <p-button label="Manage Users" icon="pi pi-users" size="small" severity="info" (onClick)="openWorkflowUserModal(wf)"></p-button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- VIEW 3: ASSIGN USERS TO TASK -->
+    <div *ngIf="activeView === 'TASK_USER'">
+      <h3 style="margin: 0 0 15px 0; color: #1e293b;">Task-Level Routing & Assignment</h3>
+      
+      <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+        <label style="font-weight: 600; display: block; margin-bottom: 8px;">Select Target Workflow</label>
+        
+        <!-- NATIVE SELECT FALLBACK -->
+        <select [(ngModel)]="workflowForTasks" (change)="onWorkflowSelect()" style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; outline: none; font-size: 14px; background: white; cursor: pointer;">
+          <option [ngValue]="null" disabled selected>Select a Workflow...</option>
+          <option *ngFor="let wf of workflows" [ngValue]="wf">{{ wf.name }}</option>
+        </select>
+      </div>
+
+      <p-table *ngIf="tasks.length > 0" [value]="tasks" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Task Name</th>
+            <th>Task Definition ID</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-task>
+          <tr>
+            <td style="font-weight: 600;">{{ task.name }}</td>
+            <td style="font-family: monospace; color: #64748b;">{{ task.id }}</td>
+            <td style="text-align: right;">
+              <p-button label="Add User" icon="pi pi-user-plus" size="small" severity="success" (onClick)="openTaskUserModal(task)"></p-button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+      
+      <div *ngIf="!workflowForTasks" style="text-align: center; padding: 30px; color: #94a3b8; font-style: italic;">
+        Please select a workflow from the dropdown above to view its tasks.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- DIALOG MODALS -->
+<!-- ====================================================================== -->
+
+<!-- Modal 1: Assign Workflows to User -->
+<p-dialog header="Assign Workflows to: {{ selectedUser?.id }}" [(visible)]="displayUserWorkflowModal" [modal]="true" [style]="{width: '450px'}">
+  <div style="padding-top: 10px;">
+    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Select Workflows</label>
+    
+    <!-- NATIVE MULTI-SELECT FALLBACK -->
+    <select multiple [(ngModel)]="selectedWorkflows" style="width: 100%; height: 120px; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; outline: none; font-size: 14px; background: white;">
+      <option *ngFor="let wf of workflows" [ngValue]="wf" style="padding: 5px;">{{ wf.name }}</option>
+    </select>
+    <small style="color: #64748b; margin-top: 5px; display: block;">Hold Ctrl (or Cmd) to select multiple.</small>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button icon="pi pi-times" (onClick)="displayUserWorkflowModal=false" label="Cancel" styleClass="p-button-text p-button-secondary"></p-button>
+    <p-button icon="pi pi-check" (onClick)="saveUserWorkflows()" label="Save Assignments" [disabled]="selectedWorkflows.length === 0"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal 2: Assign Users for Workflow -->
+<p-dialog header="Manage Users: {{ selectedWorkflow?.name }}" [(visible)]="displayWorkflowUserModal" [modal]="true" [style]="{width: '500px'}">
+  
+  <div style="margin-bottom: 20px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 10px;">Currently Assigned Users</label>
+    <div *ngIf="currentWorkflowUsers.length === 0" style="color: #64748b; font-size: 13px; font-style: italic;">No users currently assigned.</div>
+    <ul style="list-style: none; padding: 0; margin: 0;">
+      <li *ngFor="let u of currentWorkflowUsers" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 5px;">
+        <span><i class="pi pi-user" style="margin-right: 8px; color: #0284c7;"></i> {{ u.userId }}</span>
+        <button (click)="removeUserFromWorkflow(u.userId)" style="background: none; border: none; color: #ef4444; cursor: pointer; font-weight: bold;">Remove</button>
+      </li>
+    </ul>
+  </div>
+
+  <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Add New User</label>
+    <div style="display: flex; gap: 10px;">
+      
+      <!-- NATIVE SELECT FALLBACK -->
+      <select [(ngModel)]="newUserToWorkflow" style="flex-grow: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; outline: none; font-size: 14px; background: white; cursor: pointer;">
+        <option [ngValue]="null" disabled selected>Select user...</option>
+        <option *ngFor="let u of users" [ngValue]="u">{{ u.id }}</option>
+      </select>
+      
+      <p-button label="Add" icon="pi pi-plus" (onClick)="addUserToWorkflow()" [disabled]="!newUserToWorkflow"></p-button>
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Modal 3: Assign Users to Task -->
+<p-dialog header="Assign Task: {{ selectedTask?.name }}" [(visible)]="displayTaskUserModal" [modal]="true" [style]="{width: '550px'}">
+  
+  <div style="margin-bottom: 20px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 10px;">Currently Assigned Configuration</label>
+    <div *ngIf="currentTaskRules.length === 0" style="color: #64748b; font-size: 13px; font-style: italic;">No routing configurations assigned.</div>
+    <ul style="list-style: none; padding: 0; margin: 0;">
+      <li *ngFor="let rule of currentTaskRules" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 5px;">
+        <span>
+          <p-tag [value]="rule.assignmentType" [severity]="rule.assignmentType === 'SELECT' ? 'info' : 'warn'" styleClass="mr-2"></p-tag>
+          <strong *ngIf="rule.assignmentType === 'SELECT'" style="margin-left: 8px;">{{ rule.assigneeUserId }}</strong>
+        </span>
+        <button (click)="removeRuleFromTask(rule.id)" style="background: none; border: none; color: #ef4444; cursor: pointer; font-weight: bold;">Remove</button>
+      </li>
+    </ul>
+  </div>
+
+  <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 12px;">Add New Assignment Rule</label>
+    
+    <!-- NATIVE RADIO BUTTON FALLBACKS -->
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px;">
+      <div style="display: flex; align-items: center;">
+        <input type="radio" name="tType" value="STAR" [(ngModel)]="taskAssignmentType" id="r1" style="width: 18px; height: 18px; cursor: pointer;">
+        <label for="r1" style="margin-left: 8px; cursor: pointer;"><strong>Starter User</strong> (Assign to workflow initiator)</label>
+      </div>
+      
+      <div style="display: flex; align-items: center;">
+        <input type="radio" name="tType" value="DYNAMIC" [(ngModel)]="taskAssignmentType" id="r2" style="width: 18px; height: 18px; cursor: pointer;">
+        <label for="r2" style="margin-left: 8px; cursor: pointer;"><strong>Dynamic User</strong> (Round-robin assignment)</label>
+      </div>
+
+      <div style="display: flex; align-items: center;">
+        <input type="radio" name="tType" value="SELECT" [(ngModel)]="taskAssignmentType" id="r3" style="width: 18px; height: 18px; cursor: pointer;">
+        <label for="r3" style="margin-left: 8px; cursor: pointer;"><strong>Select Specific User</strong></label>
+      </div>
+    </div>
+
+    <!-- NATIVE SELECT FALLBACK -->
+    <div *ngIf="taskAssignmentType === 'SELECT'" style="margin-left: 30px; margin-bottom: 15px; animation: fadeIn 0.2s;">
+      <select [(ngModel)]="taskUserToAdd" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; outline: none; font-size: 14px; background: white; cursor: pointer;">
+        <option [ngValue]="null" disabled selected>Choose user...</option>
+        <option *ngFor="let u of users" [ngValue]="u">{{ u.id }}</option>
+      </select>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button icon="pi pi-times" (onClick)="displayTaskUserModal=false" label="Cancel" styleClass="p-button-text p-button-secondary"></p-button>
+    <p-button icon="pi pi-check" (onClick)="addUserToTask()" label="Add Rule" [disabled]="taskAssignmentType === 'SELECT' && !taskUserToAdd"></p-button>
+  </ng-template>
+</p-dialog>

@@ -1,23 +1,30 @@
-<div style="display: flex; justify-content: space-between; align-items: center;">
-  <h2>User Management</h2>
-  <a routerLink="/admin/users/create" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">+ Create New User</a>
+<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); animation: fadeIn 0.3s;">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+    <h2 style="margin: 0; color: #1e293b;">User Manager</h2>
+    
+    <!-- Notice the routerLink here navigating to your dedicated Create component -->
+    <a pButton icon="pi pi-plus" label="Create User" routerLink="/admin/users/create" class="p-button-sm" style="text-decoration: none;"></a>
+  </div>
+  
+  <!-- Add your data array to the value property -->
+  <p-table [value]="users" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-striped">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Username</th>
+        <th>Email</th>
+        <th style="text-align: right;">Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-user>
+      <tr>
+        <td style="font-weight: 600; color: #0284c7;">{{ user.id }}</td>
+        <td>{{ user.email }}</td>
+        <td style="text-align: right;">
+          <!-- Passing the user ID to your edit route -->
+          <p-button icon="pi pi-pencil" [routerLink]="['/users/edit', user.id]" styleClass="p-button-text p-button-sm"></p-button>
+          <p-button icon="pi pi-trash" styleClass="p-button-text p-button-danger p-button-sm"></p-button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
 </div>
-
-<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-  <tr style="background-color: #f8f9fa;">
-    <th>ID</th>
-    <th>First Name</th>
-    <th>Last Name</th>
-    <th>Email</th>
-    <th>Action</th>
-  </tr>
-  <tr *ngFor="let user of users">
-    <td>{{ user.id }}</td>
-    <td>{{ user.firstName }}</td>
-    <td>{{ user.lastName }}</td>
-    <td>{{ user.email }}</td>
-    <td>
-      <a [routerLink]="['/admin/users/edit', user.id]" style="padding: 5px 10px; background-color: #ffc107; color: black; text-decoration: none; border-radius: 4px;">Edit Profile</a>
-    </td>
-  </tr>
-</table>
