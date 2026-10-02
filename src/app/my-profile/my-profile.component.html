@@ -1,4 +1,4 @@
-<h2>My Profile: <span style="color: #fd7e14;">{{ userId }}</span></h2>
+<h2>My Profile: <span style="color: #fd7e14;">{{ username || userId }}</span></h2>
 
 <div style="display: flex; border-bottom: 2px solid #ccc; margin-bottom: 20px;">
   <button (click)="activeTab = 'Profile'" [style.borderBottom]="activeTab === 'Profile' ? '3px solid #fd7e14' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Personal Details</button>

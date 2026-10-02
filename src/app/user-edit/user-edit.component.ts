@@ -13,138 +13,112 @@ import { FormsModule } from '@angular/forms';
 })
 export class UserEditComponent implements OnInit {
   userId: string = '';
-  activeTab: string = 'Profile'; 
+  user: any = {
+    id: '',
+    username: '',
+    fullName: '',
+    email: '',
+    active: true,
+    roles: ['ROLE_WORKER']
+  };
 
-  profile = { id: '', firstName: '', lastName: '', email: '' };
-  passwords = { current: '', new: '', repeat: '' };
+  selectedRole = 'ROLE_WORKER';
+  newPassword = '';
+  repeatPassword = '';
 
-  // Data arrays
-  userGroups: any[] = [];
-  availableGroups: any[] = [];
-  userTenants: any[] = [];
-  availableTenants: any[] = [];
-
-  // UI States for adding
-  showAddGroup = false;
-  selectedGroupId = '';
-  showAddTenant = false;
-  selectedTenantId = '';
-
-  // Messages
-  profileMsg = '';
-  accountMsg = '';
+  errorMessage = '';
+  successMessage = '';
+  loading = false;
 
   constructor(
-    private route: ActivatedRoute, 
-    private http: HttpClient, 
+    private route: ActivatedRoute,
+    private http: HttpClient,
     private router: Router
   ) {}
 
   ngOnInit() {
     this.userId = this.route.snapshot.paramMap.get('id') || '';
-    this.loadProfile();
-    this.loadMemberships();
+    if (this.userId) {
+      this.loadUser();
+    }
   }
 
-  loadProfile() {
-    this.http.get<any>(`http://localhost:8082/api/users/${this.userId}/profile`).subscribe({
-      next: (data) => this.profile = { id: this.userId, ...data },
-      error: () => alert('Error loading user profile.')
-    });
-  }
-
-  loadMemberships() {
-    // Load Groups
-    this.http.get<any[]>('http://localhost:8082/api/groups').subscribe(allGroups => {
-      this.http.get<any[]>(`http://localhost:8082/api/users/${this.userId}/groups`).subscribe(userGroups => {
-        this.userGroups = userGroups;
-        // Filter out groups the user is already in to populate the dropdown
-        this.availableGroups = allGroups.filter(g => !userGroups.some(ug => ug.id === g.id));
-      });
-    });
-
-    // Load Tenants
-    this.http.get<any[]>('http://localhost:8082/api/tenants').subscribe(allTenants => {
-      this.http.get<any[]>(`http://localhost:8082/api/users/${this.userId}/tenants`).subscribe(userTenants => {
-        this.userTenants = userTenants;
-        // Filter out tenants the user is already in
-        this.availableTenants = allTenants.filter(t => !userTenants.some(ut => ut.id === t.id));
-      });
-    });
-  }
-
-  // --- Profile & Account Methods ---
-  updateProfile() {
-    const payload = { id: this.profile.id, firstName: this.profile.firstName, lastName: this.profile.lastName, email: this.profile.email };
-    this.http.put(`http://localhost:8082/api/users/${this.userId}/profile`, payload).subscribe({
-      next: () => {
-        this.profileMsg = 'Profile updated successfully!';
-        setTimeout(() => this.profileMsg = '', 3000);
+  loadUser() {
+    this.loading = true;
+    this.http.get<any>(`http://localhost:8082/api/users/${this.userId}`).subscribe({
+      next: (data) => {
+        this.user = data;
+        if (data.roles && data.roles.length > 0) {
+          this.selectedRole = data.roles[0];
+        }
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Error loading user:', err);
+        this.errorMessage = 'Failed to load user profile from MySQL.';
       }
     });
   }
 
-  updatePassword() {
-    if (this.passwords.new !== this.passwords.repeat) { this.accountMsg = 'New passwords do not match!'; return; }
-    const payload = { password: this.passwords.new, authenticatedUserPassword: this.passwords.current };
-    this.http.put(`http://localhost:8082/api/users/${this.userId}/credentials`, payload).subscribe({
+  updateProfile() {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    if (!this.user.fullName || !this.user.email) {
+      this.errorMessage = 'Full Name and Email are required.';
+      return;
+    }
+
+    if (this.newPassword && this.newPassword !== this.repeatPassword) {
+      this.errorMessage = 'New passwords do not match.';
+      return;
+    }
+
+    const nonPrimaryRoles = (this.user.roles || []).filter(
+      (r: string) => r !== 'ROLE_ADMIN' && r !== 'ROLE_WORKER' && r !== 'ROLE_MANAGER' && r !== this.selectedRole
+    );
+    const updatedRoles = Array.from(new Set([this.selectedRole, ...nonPrimaryRoles]));
+
+    const payload: any = {
+      fullName: this.user.fullName.trim(),
+      email: this.user.email.trim(),
+      active: this.user.active,
+      roles: updatedRoles
+    };
+
+    if (this.newPassword && this.newPassword.trim().length > 0) {
+      payload.password = this.newPassword.trim();
+    }
+
+    this.loading = true;
+    this.http.put(`http://localhost:8082/api/users/${this.userId}`, payload).subscribe({
       next: () => {
-        this.accountMsg = 'Password updated successfully!';
-        this.passwords = { current: '', new: '', repeat: '' };
-        setTimeout(() => this.accountMsg = '', 3000);
+        this.loading = false;
+        this.successMessage = 'User profile updated successfully in MySQL!';
+        this.newPassword = '';
+        this.repeatPassword = '';
+        setTimeout(() => (this.successMessage = ''), 3000);
       },
-      error: () => this.accountMsg = 'Error. Current password may be incorrect.'
+      error: (err) => {
+        this.loading = false;
+        console.error('Update error:', err);
+        this.errorMessage = err.error?.message || 'Failed to update user profile.';
+      }
     });
   }
 
   deleteAccount() {
-    if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete user: ${this.userId}?`)) {
+    if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete user '${this.user.username}' from MySQL?`)) {
       this.http.delete(`http://localhost:8082/api/users/${this.userId}`).subscribe({
-        next: () => { alert('User deleted.'); this.router.navigate(['/admin/users']); }
-      });
-    }
-  }
-
-  // --- Group Actions ---
-  addGroup() {
-    if (!this.selectedGroupId) return;
-    this.http.put(`http://localhost:8082/api/users/${this.userId}/groups/${this.selectedGroupId}`, {}).subscribe({
-      next: () => {
-        this.showAddGroup = false;
-        this.selectedGroupId = '';
-        this.loadMemberships(); // Refresh tables
-      },
-      error: () => alert('Failed to add group.')
-    });
-  }
-
-  removeGroup(groupId: string) {
-    if (confirm(`Remove user from group ${groupId}?`)) {
-      this.http.delete(`http://localhost:8082/api/users/${this.userId}/groups/${groupId}`).subscribe({
-        next: () => this.loadMemberships(),
-        error: () => alert('Failed to remove group.')
-      });
-    }
-  }
-
-  // --- Tenant Actions ---
-  addTenant() {
-    if (!this.selectedTenantId) return;
-    this.http.put(`http://localhost:8082/api/users/${this.userId}/tenants/${this.selectedTenantId}`, {}).subscribe({
-      next: () => {
-        this.showAddTenant = false;
-        this.selectedTenantId = '';
-        this.loadMemberships();
-      },
-      error: () => alert('Failed to add tenant.')
-    });
-  }
-
-  removeTenant(tenantId: string) {
-    if (confirm(`Remove user from tenant ${tenantId}?`)) {
-      this.http.delete(`http://localhost:8082/api/users/${this.userId}/tenants/${tenantId}`).subscribe({
-        next: () => this.loadMemberships(),
-        error: () => alert('Failed to remove tenant.')
+        next: () => {
+          alert('User deleted successfully.');
+          this.router.navigate(['/admin/users']);
+        },
+        error: (err) => {
+          console.error('Delete error:', err);
+          alert('Failed to delete user.');
+        }
       });
     }
   }

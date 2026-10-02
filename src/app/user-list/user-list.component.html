@@ -1,30 +1,191 @@
-<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); animation: fadeIn 0.3s;">
-  <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-    <h2 style="margin: 0; color: #1e293b;">User Manager</h2>
-    
-    <!-- Notice the routerLink here navigating to your dedicated Create component -->
-    <a pButton icon="pi pi-plus" label="Create User" routerLink="/admin/users/create" class="p-button-sm" style="text-decoration: none;"></a>
+<div class="user-manager-container">
+  <!-- Header Card -->
+  <div class="header-bar">
+    <div>
+      <h2 class="title">User Management (Decoupled MySQL)</h2>
+      <p class="subtitle">Direct Role-Based Access Control and Identity Management (Table: app_users)</p>
+    </div>
+    <div class="header-actions">
+      <button pButton icon="pi pi-refresh" label="Refresh" class="p-button-outlined p-button-sm mr-2" (click)="loadUsers()"></button>
+      <button pButton icon="pi pi-user-plus" label="Create New User" class="p-button-sm p-button-primary" (click)="openCreateModal()"></button>
+    </div>
   </div>
-  
-  <!-- Add your data array to the value property -->
-  <p-table [value]="users" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-striped">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Username</th>
-        <th>Email</th>
-        <th style="text-align: right;">Actions</th>
-      </tr>
+
+  <!-- Notification Banners -->
+  <div *ngIf="successMessage" class="alert alert-success">
+    <i class="pi pi-check-circle mr-2"></i> {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    <i class="pi pi-exclamation-triangle mr-2"></i> {{ errorMessage }}
+  </div>
+
+  <!-- PrimeNG Users Table -->
+  <div class="table-card">
+    <p-table [value]="users" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>User</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>RBAC Roles</th>
+          <th>Status</th>
+          <th style="text-align: right; width: 180px;">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-user>
+        <tr>
+          <td>
+            <div class="username-cell">
+              <span class="user-avatar"><i class="pi pi-user"></i></span>
+              <div>
+                <strong class="username-text">{{ user.username }}</strong>
+                <div class="uuid-text">{{ user.id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ user.fullName }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span *ngFor="let role of user.roles" class="mr-1">
+              <p-tag *ngIf="role.includes('ADMIN')" value="ADMIN" severity="danger"></p-tag>
+              <p-tag *ngIf="!role.includes('ADMIN')" value="WORKER" severity="info"></p-tag>
+            </span>
+          </td>
+          <td>
+            <p-tag [value]="user.active ? 'ACTIVE' : 'DISABLED'" [severity]="user.active ? 'success' : 'secondary'"></p-tag>
+          </td>
+          <td style="text-align: right;">
+            <div class="action-buttons">
+              <!-- Edit Modal Button -->
+              <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info" 
+                      title="Edit User" (click)="openEditModal(user)"></button>
+              
+              <!-- Toggle Active / Disabled Button -->
+              <button pButton [icon]="user.active ? 'pi pi-lock' : 'pi pi-lock-open'" 
+                      [class]="user.active ? 'p-button-text p-button-sm p-button-warning' : 'p-button-text p-button-sm p-button-success'"
+                      [title]="user.active ? 'Disable Account' : 'Enable Account'" 
+                      (click)="toggleUserStatus(user)"></button>
+
+              <!-- Delete Button -->
+              <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" 
+                      title="Delete User" (click)="deleteUser(user)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
+            <i class="pi pi-users" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+            No users found in MySQL app_users database.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Create User Modal Dialog -->
+  <p-dialog header="Create New Database User" [(visible)]="showCreateDialog" [modal]="true" [style]="{width: '520px'}" [closable]="true">
+    <div class="dialog-form">
+      <div *ngIf="errorMessage" class="alert alert-danger" style="margin-bottom: 15px;">
+        <i class="pi pi-exclamation-circle mr-2"></i> {{ errorMessage }}
+      </div>
+
+      <div class="form-group">
+        <label for="createUsername">Username *</label>
+        <input id="createUsername" type="text" class="form-control" [(ngModel)]="newUser.username" placeholder="e.g. john_doe" />
+      </div>
+
+      <div class="form-group">
+        <label for="createFullName">Full Name *</label>
+        <input id="createFullName" type="text" class="form-control" [(ngModel)]="newUser.fullName" placeholder="e.g. John Doe" />
+      </div>
+
+      <div class="form-group">
+        <label for="createEmail">Email Address *</label>
+        <input id="createEmail" type="email" class="form-control" [(ngModel)]="newUser.email" placeholder="e.g. john@company.com" />
+      </div>
+
+      <div class="form-group">
+        <label for="createPassword">Password *</label>
+        <input id="createPassword" type="password" class="form-control" [(ngModel)]="newUser.password" placeholder="Min 8 chars with upper, number & special char" />
+        <small class="hint-text">Must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number, and 1 special character (@#$%^&+=!_).</small>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex: 1; margin-right: 10px;">
+          <label for="createRole">Assigned Role *</label>
+          <select id="createRole" class="form-control" [(ngModel)]="newUser.role">
+            <option value="ROLE_WORKER">Standard Worker (ROLE_WORKER)</option>
+            <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="flex: 1;">
+          <label for="createStatus">Account Status</label>
+          <select id="createStatus" class="form-control" [(ngModel)]="newUser.active">
+            <option [ngValue]="true">Active</option>
+            <option [ngValue]="false">Disabled</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancel" class="p-button-text p-button-secondary" (click)="showCreateDialog = false"></button>
+      <button pButton icon="pi pi-check" label="Save to MySQL" class="p-button-primary" (click)="submitCreateUser()"></button>
     </ng-template>
-    <ng-template pTemplate="body" let-user>
-      <tr>
-        <td style="font-weight: 600; color: #0284c7;">{{ user.id }}</td>
-        <td>{{ user.email }}</td>
-        <td style="text-align: right;">
-          <!-- Passing the user ID to your edit route -->
-          <p-button icon="pi pi-pencil" [routerLink]="['/users/edit', user.id]" styleClass="p-button-text p-button-sm"></p-button>
-          <p-button icon="pi pi-trash" styleClass="p-button-text p-button-danger p-button-sm"></p-button>
-        </td>
-      </tr>
+  </p-dialog>
+
+  <!-- Edit User Modal Dialog -->
+  <p-dialog [header]="'Edit User: ' + (editingUser?.username || '')" [(visible)]="showEditDialog" [modal]="true" [style]="{width: '520px'}" [closable]="true">
+    <div class="dialog-form" *ngIf="editingUser">
+      <div *ngIf="errorMessage" class="alert alert-danger" style="margin-bottom: 15px;">
+        <i class="pi pi-exclamation-circle mr-2"></i> {{ errorMessage }}
+      </div>
+
+      <div class="form-group">
+        <label>User UUID</label>
+        <input type="text" class="form-control" [value]="editingUser.id" disabled style="background-color: #f1f5f9; cursor: not-allowed;" />
+      </div>
+
+      <div class="form-group">
+        <label for="editFullName">Full Name *</label>
+        <input id="editFullName" type="text" class="form-control" [(ngModel)]="editFormData.fullName" />
+      </div>
+
+      <div class="form-group">
+        <label for="editEmail">Email Address *</label>
+        <input id="editEmail" type="email" class="form-control" [(ngModel)]="editFormData.email" />
+      </div>
+
+      <div class="form-group">
+        <label for="editPassword">New Password (leave blank to keep current)</label>
+        <input id="editPassword" type="password" class="form-control" [(ngModel)]="editFormData.password" placeholder="Optional new password" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex: 1; margin-right: 10px;">
+          <label for="editRole">Assigned Role</label>
+          <select id="editRole" class="form-control" [(ngModel)]="editFormData.role">
+            <option value="ROLE_WORKER">Standard Worker (ROLE_WORKER)</option>
+            <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="flex: 1;">
+          <label for="editStatus">Account Status</label>
+          <select id="editStatus" class="form-control" [(ngModel)]="editFormData.active">
+            <option [ngValue]="true">Active</option>
+            <option [ngValue]="false">Disabled</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton label="Cancel" class="p-button-text p-button-secondary" (click)="showEditDialog = false"></button>
+      <button pButton icon="pi pi-check" label="Update User" class="p-button-primary" (click)="submitEditUser()"></button>
     </ng-template>
-  </p-table>
+  </p-dialog>
 </div>

@@ -1,31 +1,249 @@
-<h2>Active Tasks</h2>
-
-<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
-  <tr style="background-color: #e6f7ff;">
-    <th>Task ID</th>
-    <th>Task Name</th>
-    <th>Process Instance</th>
-    <th>Action</th>
-  </tr>
-  <tr *ngFor="let task of activeTasks">
-    <td>{{ task.id }}</td>
-    <td>{{ task.name }}</td>
-    <td>{{ task.processInstanceId }}</td>
-    <td>
-      <button (click)="openActionForm(task)" style="padding: 5px 10px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px;">Action</button>
-    </td>
-  </tr>
-</table>
-
-<div *ngIf="selectedTask" style="position: fixed; top: 10%; left: 25%; width: 50%; height: 80vh; display: flex; flex-direction: column; background: white; padding: 30px; border: 2px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; border-radius: 8px;">
-  
-  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
-    <h2 style="margin: 0;">Task: {{ selectedTask.name }}</h2>
-    <button (click)="closeForm()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;" title="Close without submitting">&times;</button>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+  <div>
+    <h2 style="color: #f8fafc; font-size: 24px; font-weight: 700; margin: 0;">Pending Tasks</h2>
+    <p style="color: #94a3b8; font-size: 14px; margin: 4px 0 0 0;">
+      All active runtime user tasks across active process instances in Camunda 7
+    </p>
   </div>
-  
-  <div id="camunda-form-container" style="flex-grow: 1; overflow-y: auto; margin-bottom: 20px;"></div>
-
+  <button (click)="loadTasks()" style="background: #1e293b; color: #f59e0b; border: 1px solid #334155; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+    <i class="pi pi-refresh"></i> Refresh Tasks
+  </button>
 </div>
 
-<div *ngIf="selectedTask" (click)="closeForm()" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+<!-- ACTIVE TASKS TABLE -->
+<div style="background: #1e293b; border-radius: 12px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+  
+  <div *ngIf="loading" style="padding: 40px; text-align: center; color: #94a3b8;">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #f59e0b; margin-bottom: 12px;"></i>
+    <div>Fetching active engine tasks...</div>
+  </div>
+
+  <table *ngIf="!loading" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; color: #f8fafc;">
+    <thead>
+      <tr style="background: #0f172a; border-bottom: 1px solid #334155; color: #94a3b8; text-transform: uppercase; font-size: 11px; letter-spacing: 0.8px;">
+        <th style="padding: 16px 20px;">Task Name</th>
+        <th style="padding: 16px 20px;">Process Instance ID</th>
+        <th style="padding: 16px 20px;">Assignee</th>
+        <th style="padding: 16px 20px;">Created Date</th>
+        <th style="padding: 16px 20px; text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let task of activeTasks" style="border-bottom: 1px solid #334155; transition: background 0.2s;" onmouseover="this.style.background='#283548'" onmouseout="this.style.background='transparent'">
+        <td style="padding: 16px 20px; font-weight: 600;">
+          <div style="color: #f8fafc; font-size: 15px;">{{ task.name || 'Task ' + task.taskDefinitionKey }}</div>
+          <div style="color: #64748b; font-size: 11px; font-family: monospace;">Task ID: {{ task.id }}</div>
+        </td>
+        <td style="padding: 16px 20px;">
+          <span style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid rgba(56, 189, 248, 0.2);">
+            {{ task.processInstanceId }}
+          </span>
+        </td>
+        <td style="padding: 16px 20px;">
+          <!-- User assigned -->
+          <span *ngIf="task.assignee" style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(16, 185, 129, 0.3); display: inline-flex; align-items: center; gap: 5px;">
+            <i class="pi pi-user" style="font-size: 11px;"></i>
+            {{ task.assigneeName ? task.assigneeName + ' (' + task.assignee + ')' : task.assignee }}
+          </span>
+
+          <!-- Group assigned -->
+          <span *ngIf="!task.assignee && task.candidateGroup" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(168, 85, 247, 0.3); display: inline-flex; align-items: center; gap: 5px;">
+            <i class="pi pi-users" style="font-size: 11px;"></i>
+            {{ task.candidateGroupName ? task.candidateGroupName + ' (' + task.candidateGroup + ')' : task.candidateGroup }} (Group)
+          </span>
+
+          <!-- Unassigned -->
+          <span *ngIf="!task.assignee && !task.candidateGroup" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(245, 158, 11, 0.3); display: inline-flex; align-items: center; gap: 5px;">
+            <i class="pi pi-clock" style="font-size: 11px;"></i> Unassigned
+          </span>
+        </td>
+        <td style="padding: 16px 20px; color: #94a3b8; font-size: 13px;">
+          {{ task.created | date:'medium' }}
+        </td>
+        <td style="padding: 16px 20px; text-align: right;">
+          <div style="display: inline-flex; gap: 8px;">
+            <button (click)="openActionForm(task)" style="background: linear-gradient(135deg, #0284c7, #38bdf8); color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2); transition: all 0.2s;">
+              <i class="pi pi-pencil"></i> Work Task
+            </button>
+            <button (click)="openAssignModal(task)" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;">
+              <i class="pi pi-user-edit"></i> Reassign
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      <tr *ngIf="!loading && activeTasks.length === 0">
+        <td colspan="5" style="padding: 40px; text-align: center; color: #64748b;">
+          <i class="pi pi-check-circle" style="font-size: 2.5rem; margin-bottom: 10px; color: #34d399; display: block;"></i>
+          No pending tasks found. All processes are up to date!
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- TASK ACTION & FORM SUBMISSION MODAL -->
+<div *ngIf="selectedTask" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; padding: 20px;">
+  
+  <div style="background: #1e293b; border-radius: 14px; border: 1px solid #334155; width: 100%; max-width: 700px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+    
+    <!-- Modal Header -->
+    <div style="padding: 18px 24px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; background: #0f172a;">
+      <div>
+        <h3 style="margin: 0; color: #f8fafc; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          <i class="pi pi-check-square" style="color: #38bdf8;"></i> {{ selectedTask.name || selectedTask.id }}
+        </h3>
+        <div style="color: #94a3b8; font-size: 12px; margin-top: 2px;">
+          Task ID: <span style="font-family: monospace; color: #38bdf8;">{{ selectedTask.id }}</span>
+        </div>
+      </div>
+      <button (click)="closeForm()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Task Assignee Quick Bar -->
+    <div style="padding: 12px 24px; background: #162032; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+      <div style="font-size: 13px; color: #94a3b8; display: flex; align-items: center; gap: 8px;">
+        <i class="pi pi-user-edit" style="color: #f59e0b;"></i> Current Assignment:
+        <span *ngIf="selectedTask?.assignee" style="color: #34d399; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+          <i class="pi pi-user" style="font-size: 11px;"></i> {{ selectedTask.assigneeName ? selectedTask.assigneeName + ' (' + selectedTask.assignee + ')' : selectedTask.assignee }}
+        </span>
+        <span *ngIf="!selectedTask?.assignee && selectedTask?.candidateGroup" style="color: #c084fc; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+          <i class="pi pi-users" style="font-size: 11px;"></i> Group: {{ selectedTask.candidateGroupName ? selectedTask.candidateGroupName + ' (' + selectedTask.candidateGroup + ')' : selectedTask.candidateGroup }}
+        </span>
+        <span *ngIf="!selectedTask?.assignee && !selectedTask?.candidateGroup" style="color: #fbbf24; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+          <i class="pi pi-clock" style="font-size: 11px;"></i> Unassigned
+        </span>
+      </div>
+      <button (click)="openAssignModal(selectedTask)" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+        <i class="pi pi-pencil"></i> Change Assignee / Group
+      </button>
+    </div>
+
+    <!-- Modal Form Body -->
+    <div style="padding: 24px; flex-grow: 1; overflow-y: auto; background: #090d16;">
+      
+      <!-- Option A: Deployed Camunda JSON Form container -->
+      <div [hidden]="!hasDeployedForm">
+        <div id="camunda-form-container" style="color: #f8fafc;"></div>
+      </div>
+
+      <!-- Option B: Dynamic Variable Form Fallback -->
+      <div *ngIf="!hasDeployedForm">
+        <div style="margin-bottom: 16px; font-size: 14px; font-weight: 600; color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+          <span>Submit Task Variables</span>
+          <button (click)="addFallbackVariable()" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <i class="pi pi-plus"></i> Add Variable
+          </button>
+        </div>
+
+        <div *ngFor="let item of fallbackVariables; let i = index" style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center;">
+          <input type="text" [(ngModel)]="item.key" placeholder="Variable Name" style="flex: 1; background: #1e293b; border: 1px solid #334155; color: #38bdf8; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-family: monospace; outline: none;">
+          <input type="text" [(ngModel)]="item.value" placeholder="Value" style="flex: 1.5; background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 8px 12px; border-radius: 6px; font-size: 13px; outline: none;">
+          <button (click)="removeFallbackVariable(i)" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px; border-radius: 6px; cursor: pointer;">
+            <i class="pi pi-trash"></i>
+          </button>
+        </div>
+
+        <div style="margin-top: 25px; text-align: right;">
+          <button (click)="submitFallbackForm()" style="background: linear-gradient(135deg, #059669, #10b981); color: #ffffff; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
+            <i class="pi pi-check" style="margin-right: 6px;"></i> Submit & Complete Task
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="padding: 15px 24px; border-top: 1px solid #334155; text-align: right; background: #0f172a;">
+      <button (click)="closeForm()" style="background: #334155; color: #f8fafc; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+        Close Window
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ASSIGN / REASSIGN MODAL -->
+<div *ngIf="displayAssignModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 1100; display: flex; justify-content: center; align-items: center; padding: 20px;">
+  <div style="background: #1e293b; border-radius: 12px; border: 1px solid #334155; width: 100%; max-width: 520px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); overflow: hidden;">
+    
+    <!-- Modal Header -->
+    <div style="padding: 16px 20px; background: #0f172a; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; color: #f8fafc; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <i class="pi pi-user-edit" style="color: #38bdf8;"></i> Assign / Change Assignment
+      </h3>
+      <button (click)="closeAssignModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer;">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div style="padding: 24px;">
+      <div style="margin-bottom: 16px; background: #0f172a; padding: 12px 16px; border-radius: 8px; border: 1px solid #334155;">
+        <div style="font-size: 14px; font-weight: 600; color: #f8fafc;">{{ taskToAssign?.name || taskToAssign?.taskDefinitionKey || taskToAssign?.id }}</div>
+        <div style="font-size: 12px; color: #64748b; margin-top: 4px; font-family: monospace;">Task ID: {{ taskToAssign?.id }}</div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 10px;">Select Assignment Target:</label>
+        <div style="display: flex; gap: 12px;">
+          <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #0f172a; border: 1px solid; border-radius: 8px; cursor: pointer;" [style.borderColor]="assignTargetType === 'USER' ? '#38bdf8' : '#334155'">
+            <input type="radio" name="atAssignTarget" value="USER" [(ngModel)]="assignTargetType" style="accent-color: #38bdf8;">
+            <span style="font-size: 13px; font-weight: 600; color: #f8fafc;">👤 User</span>
+          </label>
+          <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #0f172a; border: 1px solid; border-radius: 8px; cursor: pointer;" [style.borderColor]="assignTargetType === 'GROUP' ? '#c084fc' : '#334155'">
+            <input type="radio" name="atAssignTarget" value="GROUP" [(ngModel)]="assignTargetType" style="accent-color: #c084fc;">
+            <span style="font-size: 13px; font-weight: 600; color: #f8fafc;">👥 Group</span>
+          </label>
+          <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #0f172a; border: 1px solid; border-radius: 8px; cursor: pointer;" [style.borderColor]="assignTargetType === 'UNASSIGN' ? '#ef4444' : '#334155'">
+            <input type="radio" name="atAssignTarget" value="UNASSIGN" [(ngModel)]="assignTargetType" style="accent-color: #ef4444;">
+            <span style="font-size: 13px; font-weight: 600; color: #f8fafc;">⚪ Unassign</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- User Dropdown -->
+      <div *ngIf="assignTargetType === 'USER'" style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">Choose User:</label>
+        <select [(ngModel)]="selectedAssigneeUserId" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none;">
+          <option value="" disabled>-- Select User --</option>
+          <option *ngFor="let u of availableUsers" [value]="u.username">
+            {{ u.fullName ? u.fullName + ' (' + u.username + ')' : u.username }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Group Dropdown -->
+      <div *ngIf="assignTargetType === 'GROUP'" style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">Choose Group:</label>
+        <select [(ngModel)]="selectedAssigneeGroupId" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none;">
+          <option value="" disabled>-- Select Group --</option>
+          <option *ngFor="let g of availableGroups" [value]="g.id">
+            {{ g.name ? g.name + ' (' + g.id + ')' : g.id }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Unassign note -->
+      <div *ngIf="assignTargetType === 'UNASSIGN'" style="margin-bottom: 20px; color: #94a3b8; font-size: 13px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 8px;">
+        <i class="pi pi-info-circle" style="color: #ef4444; margin-right: 6px;"></i>
+        This will clear any current user assignee and candidate group links, leaving the task unassigned.
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="padding: 16px 20px; background: #0f172a; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 12px;">
+      <button (click)="closeAssignModal()" [disabled]="assignLoading" style="background: #334155; color: #f8fafc; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+        Cancel
+      </button>
+      <button (click)="saveTaskAssignment()" [disabled]="assignLoading" style="background: linear-gradient(135deg, #0284c7, #38bdf8); color: #ffffff; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        <i *ngIf="assignLoading" class="pi pi-spinner pi-spin"></i>
+        <i *ngIf="!assignLoading" class="pi pi-check"></i>
+        Apply Assignment
+      </button>
+    </div>
+
+  </div>
+</div>

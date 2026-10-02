@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../auth.service';
-import { Form } from '@bpmn-io/form-js'; // 1. Import official Camunda form library
+import { Form } from '@bpmn-io/form-js';
 
 @Component({
   selector: 'app-my-tasks',
@@ -16,19 +16,18 @@ export class MyTasksComponent implements OnInit {
   tasks: any[] = [];
   users: any[] = [];
   loading = true;
+  activeFilter: 'ALL' | 'DIRECT' | 'GROUP' = 'ALL';
 
-  // Modal & Step Navigation State
+  // Task Completion Modal State
   showCompleteModal = false;
-  step = 1; // Step 1 = Native Form | Step 2 = Route Next Stage
   selectedTaskId = '';
   selectedTaskName = '';
-  nextReviewer = '';
+  submitting = false;
   
   // Native Camunda Form State
   formInstance: any = null;
   loadingForm = false;
   hasFormSchema = true;
-  capturedFormData: any = {};
 
   constructor(private http: HttpClient, public authService: AuthService) {}
 
@@ -38,11 +37,12 @@ export class MyTasksComponent implements OnInit {
   }
 
   loadMyTasks(): void {
-    const userId = this.authService.getCurrentUserId();
-    this.http.get<any[]>(`http://localhost:8082/api/tasks/my-tasks?userId=${userId}&isAdmin=false`)
+    this.loading = true;
+    const username = this.authService.getCurrentUsername();
+    this.http.get<any[]>(`http://localhost:8082/api/tasks/my-tasks?userId=${username}`)
       .subscribe({
         next: (data) => {
-          this.tasks = data;
+          this.tasks = data || [];
           this.loading = false;
         },
         error: (err) => {
@@ -54,54 +54,100 @@ export class MyTasksComponent implements OnInit {
 
   loadUsers(): void {
     this.http.get<any[]>('http://localhost:8082/api/tasks/users').subscribe({
-      next: (data) => this.users = data,
+      next: (data) => this.users = data || [],
       error: () => console.error('Failed to load user list')
+    });
+  }
+
+  get filteredTasks(): any[] {
+    const currentUsername = this.authService.getCurrentUsername();
+    if (this.activeFilter === 'DIRECT') {
+      return this.tasks.filter(t => t.assignee && (t.assignee === currentUsername || t.assignee === this.authService.getCurrentUserId()));
+    }
+    if (this.activeFilter === 'GROUP') {
+      return this.tasks.filter(t => !t.assignee && t.candidateGroup);
+    }
+    return this.tasks;
+  }
+
+  get directTasksCount(): number {
+    const currentUsername = this.authService.getCurrentUsername();
+    return this.tasks.filter(t => t.assignee && (t.assignee === currentUsername || t.assignee === this.authService.getCurrentUserId())).length;
+  }
+
+  get groupTasksCount(): number {
+    return this.tasks.filter(t => !t.assignee && t.candidateGroup).length;
+  }
+
+  isDirectlyAssigned(task: any): boolean {
+    const currentUsername = this.authService.getCurrentUsername();
+    return !!task.assignee && (task.assignee === currentUsername || task.assignee === this.authService.getCurrentUserId());
+  }
+
+  claimTask(task: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    const currentUsername = this.authService.getCurrentUsername();
+    this.http.post(`http://localhost:8082/api/tasks/${task.id}/assign`, { userId: currentUsername }).subscribe({
+      next: () => {
+        task.assignee = currentUsername;
+        task.assigneeName = currentUsername;
+        this.loadMyTasks();
+      },
+      error: (err) => alert('Failed to claim task: ' + (err.error?.message || err.message))
     });
   }
 
   openCompleteModal(task: any): void {
     this.selectedTaskId = task.id;
-    this.selectedTaskName = task.name;
-    this.nextReviewer = '';
-    this.step = 1; // Start at Step 1 (Form)
-    this.capturedFormData = {};
+    this.selectedTaskName = task.name || task.taskDefinitionKey || task.id;
     this.showCompleteModal = true;
     this.loadingForm = true;
     this.hasFormSchema = true;
+    this.submitting = false;
 
     // Fetch BOTH the deployed JSON Form Schema AND existing task variables
     this.http.get<any>(`http://localhost:8082/api/tasks/${task.id}/deployed-form`).subscribe({
       next: (schema) => {
         this.http.get<any>(`http://localhost:8082/api/tasks/${task.id}/variables`).subscribe({
           next: (vars) => {
-            // Convert Camunda variables { key: { value: X } } to Form-JS format { key: X }
             const initialData: any = {};
             Object.keys(vars || {}).forEach(k => initialData[k] = vars[k].value);
-
-            // Give Angular 100ms to render the DOM container before attaching form-js
             setTimeout(() => this.renderNativeForm(schema, initialData), 100);
           },
           error: () => setTimeout(() => this.renderNativeForm(schema, {}), 100)
         });
       },
       error: () => {
-        // Fallback if no form schema exists in Modeler
         this.loadingForm = false;
         this.hasFormSchema = false;
       }
     });
   }
 
-  // Uses @bpmn-io/form-js to render the official form inside #camunda-form-container
   async renderNativeForm(schema: any, data: any): Promise<void> {
     const container = document.querySelector('#camunda-form-container');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous forms
+    container.innerHTML = '';
 
     try {
+      if (this.formInstance) {
+        this.formInstance.destroy();
+      }
       this.formInstance = new Form({ container: container });
-      await this.formInstance.importSchema(schema, data);
+      let parsedSchema = schema;
+      if (typeof schema === 'string') {
+        parsedSchema = JSON.parse(schema);
+      }
+      await this.formInstance.importSchema(parsedSchema, data);
       this.loadingForm = false;
+
+      // Hook up the form's OWN submit button inside the bpmn.io form viewer
+      this.formInstance.on('submit', (event: any) => {
+        if (event.errors && Object.keys(event.errors).length > 0) {
+          return; // Form-JS handles inline error validation display
+        }
+        this.submitTaskDirectly(event.data);
+      });
     } catch (err) {
       console.error('Failed to render form-js:', err);
       this.loadingForm = false;
@@ -109,49 +155,55 @@ export class MyTasksComponent implements OnInit {
     }
   }
 
-  // STEP 1 PROCEED: Captures form edits and moves to Step 2 (Routing)
-  async proceedToRouting(): Promise<void> {
-    if (this.hasFormSchema && this.formInstance) {
-      // Validate and extract edited form data from form-js
-      const { data, errors } = await this.formInstance.submit();
-      
-      if (errors && Object.keys(errors).length > 0) {
-        alert('Please complete all required form fields correctly before proceeding.');
-        return;
-      }
-      this.capturedFormData = data;
-    }
-    // Transition to Step 2: Route Next Stage
-    this.step = 2;
-  }
-
-  // STEP 2 SUBMIT: Sends form data + routing variable to Camunda
-  confirmComplete(): void {
+  submitTaskDirectly(formData: any): void {
+    this.submitting = true;
     const payload: any = { variables: {} };
 
-    // 1. Attach form data captured from @bpmn-io/form-js
-    Object.keys(this.capturedFormData || {}).forEach(key => {
-      const val = this.capturedFormData[key];
+    Object.keys(formData || {}).forEach(key => {
+      const val = formData[key];
       payload.variables[key] = {
         value: val,
         type: typeof val === 'number' ? 'Long' : typeof val === 'boolean' ? 'Boolean' : 'String'
       };
     });
 
-    // 2. Attach dynamic routing variable if selected
-    if (this.nextReviewer) {
-      payload.variables['nextReviewer'] = { value: this.nextReviewer, type: 'String' };
-    }
-
-    // 3. Send final completion request to Camunda engine
-    this.http.post(`http://localhost:8082/api/tasks/${this.selectedTaskId}/complete`, payload)
+    this.http.post(`http://localhost:8082/api/tasks/${this.selectedTaskId}/submit`, payload)
       .subscribe({
         next: () => {
-          this.showCompleteModal = false;
-          alert('Task completed and routed successfully!');
+          this.submitting = false;
+          this.closeCompleteModal();
+          alert('Task submitted and completed successfully!');
           this.loadMyTasks();
         },
-        error: (err) => alert('Failed to complete task: ' + (err.error?.error || 'Server error'))
+        error: (err) => {
+          this.submitting = false;
+          alert('Failed to submit task: ' + (err.error?.message || err.error?.error || 'Server error'));
+        }
       });
+  }
+
+  submitFallbackWithoutForm(): void {
+    this.submitting = true;
+    this.http.post(`http://localhost:8082/api/tasks/${this.selectedTaskId}/submit`, { variables: {} })
+      .subscribe({
+        next: () => {
+          this.submitting = false;
+          this.closeCompleteModal();
+          alert('Task completed successfully!');
+          this.loadMyTasks();
+        },
+        error: (err) => {
+          this.submitting = false;
+          alert('Failed to complete task: ' + (err.error?.message || err.error?.error || 'Server error'));
+        }
+      });
+  }
+
+  closeCompleteModal(): void {
+    this.showCompleteModal = false;
+    if (this.formInstance) {
+      this.formInstance.destroy();
+      this.formInstance = null;
+    }
   }
 }

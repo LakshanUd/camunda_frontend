@@ -12,51 +12,51 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./user-create.component.css']
 })
 export class UserCreateComponent {
-  // Map our frontend variables to exactly what Camunda API requires
   userData = {
-    id: '',
-    firstName: '',
-    lastName: '',
+    username: '',
+    fullName: '',
     email: '',
     password: '',
-    passwordRepeat: ''
+    passwordRepeat: '',
+    role: 'ROLE_WORKER',
+    active: true
   };
   errorMessage = '';
+  loading = false;
 
   constructor(private http: HttpClient, private router: Router) {}
 
   onCreateUser() {
-    // Custom Frontend Validation
-    if (!this.userData.id || !this.userData.firstName || !this.userData.lastName || !this.userData.password) {
-      this.errorMessage = "Please fill out all required fields (*).";
+    this.errorMessage = '';
+    if (!this.userData.username || !this.userData.fullName || !this.userData.email || !this.userData.password) {
+      this.errorMessage = 'Please fill out all required fields (*).';
       return;
     }
     if (this.userData.password !== this.userData.passwordRepeat) {
-      this.errorMessage = "Passwords do not match!";
+      this.errorMessage = 'Passwords do not match!';
       return;
     }
 
-    // Camunda requires a specific nested JSON payload
     const payload = {
-      profile: {
-        id: this.userData.id,
-        firstName: this.userData.firstName,
-        lastName: this.userData.lastName,
-        email: this.userData.email
-      },
-      credentials: {
-        password: this.userData.password
-      }
+      username: this.userData.username.trim(),
+      fullName: this.userData.fullName.trim(),
+      email: this.userData.email.trim(),
+      password: this.userData.password,
+      roles: [this.userData.role],
+      active: this.userData.active
     };
 
-    this.http.post('http://localhost:8082/api/users/create', payload).subscribe({
+    this.loading = true;
+    this.http.post('http://localhost:8082/api/users', payload).subscribe({
       next: () => {
-        alert("User Created Successfully!");
+        this.loading = false;
+        alert('User created successfully in custom MySQL database!');
         this.router.navigate(['/admin/users']);
       },
       error: (err) => {
-        console.error(err);
-        this.errorMessage = "Failed to create user. ID might already exist.";
+        this.loading = false;
+        console.error('Create user error:', err);
+        this.errorMessage = err.error?.message || err.error?.details?.password || 'Failed to create user. Please check requirements.';
       }
     });
   }

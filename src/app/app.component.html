@@ -1,129 +1,114 @@
 <!-- LOGIN SCREEN (Displays if user is NOT logged in) -->
-<div *ngIf="!authService.isLoggedIn()" style="height: 100vh; display: flex; justify-content: center; align-items: center; background: #e2e8f0;">
-  <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 100%;">
-    <i class="pi pi-shield" style="font-size: 3rem; color: #0284c7; margin-bottom: 15px;"></i>
-    <h2 style="margin: 0 0 20px 0; color: #1e293b;">Enterprise Login</h2>
+<div *ngIf="!authService.isLoggedIn()" style="height: 100vh; display: flex; justify-content: center; align-items: center; background: #0f172a;">
+  <div style="background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: center; max-width: 420px; width: 100%; border: 1px solid #334155;">
+    <i class="pi pi-box" style="font-size: 3rem; color: #38bdf8; margin-bottom: 15px;"></i>
+    <h2 style="margin: 0 0 20px 0; color: #f8fafc; font-weight: 700;">Camunda 7 Engine</h2>
     <app-login></app-login>
   </div>
 </div>
 
 <!-- MAIN APPLICATION SHELL (Displays if user IS logged in) -->
-<div *ngIf="authService.isLoggedIn()" style="display: flex; height: 100vh; overflow: hidden;">
+<div *ngIf="authService.isLoggedIn()" style="display: flex; height: 100vh; overflow: hidden; background-color: #090d16;">
 
   <!-- LEFT SIDEBAR NAVIGATION -->
-  <div style="width: 260px; background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 2px 0 5px rgba(0,0,0,0.1); z-index: 10;">
+  <div style="width: 270px; background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid #1e293b; z-index: 10;">
     
     <!-- Sidebar Branding -->
-    <div style="padding: 20px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 12px;">
-      <i class="pi pi-box" style="font-size: 1.8rem; color: #38bdf8;"></i>
-      <div style="font-weight: 700; font-size: 16px; letter-spacing: 0.5px; line-height: 1.2;">
-        CAMUNDA <br><span style="color: #94a3b8; font-size: 12px; font-weight: 500;">WORKFLOW ENGINE</span>
+    <div style="padding: 22px 20px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 14px;">
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);">
+        <i class="pi pi-sitemap" style="font-size: 1.4rem; color: #ffffff;"></i>
+      </div>
+      <div>
+        <div style="font-weight: 800; font-size: 16px; letter-spacing: 0.5px; color: #f8fafc;">CAMUNDA 7</div>
+        <div style="color: #38bdf8; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;">WORKFLOW ENGINE</div>
       </div>
     </div>
 
     <!-- Navigation Links -->
-    <div style="padding: 20px 15px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1; overflow-y: auto;">
+    <div style="padding: 20px 15px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1; overflow-y: auto;">
       
-      <!-- WORKSPACE -->
-      <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; padding-left: 10px;">Workspace</div>
+      <!-- WORKFLOW MANAGEMENT -->
+      <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; padding-left: 10px; letter-spacing: 0.8px;">Workflows & Tasks</div>
       
+      <a routerLink="/processes" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
+        <i class="pi pi-sitemap" style="color: #38bdf8;"></i> Workflows
+      </a>
+
+      <a routerLink="/workflow-tasks" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
+        <i class="pi pi-list-check" style="color: #38bdf8;"></i> Tasks
+      </a>
+
       <a routerLink="/my-tasks" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-check-square"></i> My Tasks
+        <i class="pi pi-check-square" style="color: #10b981;"></i> My Tasks
       </a>
-      <a routerLink="/active-tasks" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-spinner"></i> Active Tasks
-      </a>
+
       <a routerLink="/completed-tasks" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-history"></i> Completed Tasks
-      </a>
-      <a routerLink="/processes" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-sitemap"></i> Workflows
+        <i class="pi pi-history" style="color: #a855f7;"></i> Completed Tasks
       </a>
 
-      <!-- MANAGEMENT -->
-      <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; padding-left: 10px;">Management</div>
+      <a routerLink="/workflow-assignment" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
+        <i class="pi pi-sliders-h" style="color: #06b6d4;"></i> Assignment Engine
+      </a>
 
-      <a routerLink="/audit-logs" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-chart-line"></i> Executive Dashboard
-      </a>
-      <a routerLink="/command-center" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-server"></i> Command Center
-      </a>
-      <a routerLink="/reports" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-file-excel"></i> Exportable Reports
+      <a routerLink="/my-profile" routerLinkActive="active-menu-item" class="sidebar-link">
+        <i class="pi pi-user-edit" style="color: #38bdf8;"></i> My Profile
       </a>
 
       <!-- IAM & SECURITY -->
-      <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; padding-left: 10px;">Security & Access</div>
+      <div *ngIf="authService.isAdmin()" style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 20px; margin-bottom: 6px; padding-left: 10px; letter-spacing: 0.8px;">Identity & Access</div>
 
-      <a routerLink="/admin/users" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-user"></i> User Manager
+      <a routerLink="/admin/users" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
+        <i class="pi pi-user"></i> User Directory
       </a>
-      <a routerLink="/admin/groups" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-users"></i> Department Groups
+      <a routerLink="/admin/groups" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
+        <i class="pi pi-users"></i> Groups Pool
       </a>
-      <a routerLink="/admin/tenants" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-building"></i> Tenant Controller
+      <a routerLink="/admin/tenants" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
+        <i class="pi pi-building"></i> Tenants
       </a>
-      <a routerLink="/admin/authorizations" routerLinkActive="active-menu-item" class="sidebar-link">
+      <a routerLink="/admin/authorizations" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
         <i class="pi pi-shield"></i> Security Matrix
       </a>
-      <!-- MANAGE WORKFLOWS -->
-      <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; padding-left: 10px;">Manage Workflows</div>
-
-      <a routerLink="/manage-workflows" [queryParams]="{view: 'USER_WORKFLOW'}" routerLinkActive="active-menu-item" [routerLinkActiveOptions]="{matrixParams: 'ignored', queryParams: 'exact', paths: 'exact', fragment: 'ignored'}" class="sidebar-link">
-        <i class="pi pi-user-edit"></i> Assign Workflows for User
-      </a>
       
-      <a routerLink="/manage-workflows" [queryParams]="{view: 'WORKFLOW_USER'}" routerLinkActive="active-menu-item" [routerLinkActiveOptions]="{matrixParams: 'ignored', queryParams: 'exact', paths: 'exact', fragment: 'ignored'}" class="sidebar-link">
-        <i class="pi pi-sitemap"></i> Assign Users for Workflow
-      </a>
-
-      <a routerLink="/manage-workflows" [queryParams]="{view: 'TASK_USER'}" routerLinkActive="active-menu-item" [routerLinkActiveOptions]="{matrixParams: 'ignored', queryParams: 'exact', paths: 'exact', fragment: 'ignored'}" class="sidebar-link">
-        <i class="pi pi-check-circle"></i> Assign Users to Task
-      </a>
-    </div> <!-- FIXED: Added missing closing div for Navigation Links -->
+    </div>
 
     <!-- Sidebar Footer (User Info) -->
-    <div style="padding: 15px; border-top: 1px solid #1e293b; display: flex; align-items: center; gap: 12px; background: #0b1120;">
-      <div style="width: 35px; height: 35px; border-radius: 50%; background: #38bdf8; color: #0f172a; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px;">
-        {{ authService.getCurrentUserId() | slice:0:1 | uppercase }}
+    <div style="padding: 16px; border-top: 1px solid #1e293b; display: flex; align-items: center; gap: 12px; background: #0b1329;">
+      <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #0284c7); color: #ffffff; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+        {{ (authService.getCurrentUsername() || 'U') | slice:0:1 | uppercase }}
       </div>
       <div style="flex-grow: 1; overflow: hidden;">
-        <div style="font-size: 13px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ authService.getCurrentUserId() }}</div>
-        <div style="font-size: 11px; color: #94a3b8;">Active Session</div>
+        <div style="font-size: 13px; font-weight: 600; color: #f8fafc; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ authService.getCurrentUsername() }}</div>
+        <div style="font-size: 11px; color: #10b981; font-weight: 500;">● Engine Connected</div>
       </div>
     </div>
     
-  </div> <!-- FIXED: Added missing closing div for Left Sidebar Navigation -->
+  </div>
 
   <!-- RIGHT SIDE (Top Bar + Main Content Area) -->
-  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0; background: #0f172a;">
     
     <!-- TOP APP BAR -->
-    <div style="height: 60px; background-color: #ffffff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); flex-shrink: 0;">
+    <div style="height: 64px; background-color: #1e293b; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); flex-shrink: 0;">
       
       <!-- Left side of top bar -->
       <div style="display: flex; align-items: center; gap: 15px;">
-        <i class="pi pi-bars" style="font-size: 1.2rem; color: #64748b; cursor: pointer;"></i>
-        <div style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0;">
-          <i class="pi pi-search" style="color: #94a3b8; font-size: 14px;"></i>
-          <input type="text" placeholder="Global search..." style="border: none; background: transparent; outline: none; font-size: 13px; width: 200px;">
+        <i class="pi pi-bars" style="font-size: 1.2rem; color: #94a3b8; cursor: pointer;"></i>
+        <div style="color: #94a3b8; font-size: 13px; font-weight: 500;">
+          Engine API: <span style="color: #38bdf8; font-weight: 600;">http://localhost:8081/camundaWorkflow/engine-rest</span>
         </div>
       </div>
 
       <!-- Right side of top bar -->
       <div style="display: flex; align-items: center; gap: 20px;">
-        <i class="pi pi-bell" style="font-size: 1.2rem; color: #64748b; cursor: pointer;"></i>
-        <button (click)="logout()" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
-          <i class="pi pi-sign-out" style="margin-right: 5px;"></i> Logout
+        <button (click)="logout()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+          <i class="pi pi-sign-out"></i> Logout
         </button>
       </div>
     </div>
 
-    <!-- MAIN CONTENT CANVAS (Where components load) -->
-    <div style="flex-grow: 1; overflow-y: auto; padding: 25px;">
-      <!-- The router-outlet dynamically injects MyTasks or AuditDashboard here -->
+    <!-- MAIN CONTENT CANVAS -->
+    <div style="flex-grow: 1; overflow-y: auto; padding: 30px; background: #090d16;">
       <router-outlet></router-outlet>
     </div>
 

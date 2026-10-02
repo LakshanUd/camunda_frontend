@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+import { AuthService } from '../auth.service';
+
 @Component({
   selector: 'app-my-profile',
   standalone: true,
@@ -12,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 })
 export class MyProfileComponent implements OnInit {
   userId: string = '';
+  username: string = '';
   activeTab: string = 'Profile';
 
   profile = { id: '', firstName: '', lastName: '', email: '' };
@@ -20,19 +23,22 @@ export class MyProfileComponent implements OnInit {
   profileMsg = '';
   accountMsg = '';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   ngOnInit() {
-    // Read the ID of the currently logged-in user
-    this.userId = localStorage.getItem('loggedInUser') || '';
-    if(this.userId) {
+    this.userId = this.authService.getCurrentUserId();
+    this.username = this.authService.getCurrentUsername();
+    if (this.userId) {
       this.loadProfile();
     }
   }
 
   loadProfile() {
-    this.http.get<any>(`http://localhost:8082/api/users/${this.userId}/profile`).subscribe(data => {
-      this.profile = { id: this.userId, ...data };
+    this.http.get<any>(`http://localhost:8082/api/users/${this.userId}/profile`).subscribe({
+      next: (data) => {
+        this.profile = { id: this.userId, ...data };
+      },
+      error: (err) => console.error('Failed to load profile', err)
     });
   }
 

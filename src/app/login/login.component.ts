@@ -1,53 +1,56 @@
 import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common'; // Fixes NG8103 (*ngIf warning)
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService, UserSession } from '../auth.service'; // Imports RBAC Service
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule], // Both required for template directives
+  imports: [CommonModule, FormsModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-  // Restored to match your login.component.html [(ngModel)] bindings
   credentials = { username: '', password: '' };
   errorMessage = '';
+  loading = false;
 
   constructor(
-    private http: HttpClient, 
-    private router: Router, 
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   onLogin() {
-    this.errorMessage = ''; // Clear previous errors
+    this.errorMessage = '';
+    if (!this.credentials.username || !this.credentials.password) {
+      this.errorMessage = 'Please provide both username and password.';
+      return;
+    }
 
-    // Call the new RBAC authentication endpoint from Step 1A
-    this.http.post<UserSession>('http://localhost:8082/api/auth/login', this.credentials)
-      .subscribe({
-        next: (sessionData) => {
-          // 1. Save structured session (creates 'camunda_user_session' key in localStorage)
-          this.authService.saveSession(sessionData);
+    this.loading = true;
 
-          // 2. Route dynamically based on privileges
-          if (sessionData.isAdmin) {
-            this.router.navigate(['/admin/dispatcher']); // Send Admins to Command Center
-          } else {
-            this.router.navigate(['/my-tasks']);         // Send Workers to personal task table
-          }
-        },
-        error: (err) => {
-          console.error('Login error:', err);
-          if (err.status === 401) {
-            this.errorMessage = 'Invalid Username or Password.';
-          } else {
-            this.errorMessage = 'Server error connecting to Camunda backend.';
-          }
+    this.authService.login(this.credentials).subscribe({
+      next: (response) => {
+        this.loading = false;
+        // Route dynamically based on privileges
+        if (response.isAdmin) {
+          this.router.navigate(['/admin/users']);
+        } else {
+          this.router.navigate(['/my-tasks']);
         }
-      });
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Login error:', err);
+        if (err.status === 401) {
+          this.errorMessage = 'Invalid username or password.';
+        } else if (err.error?.message) {
+          this.errorMessage = err.error.message;
+        } else {
+          this.errorMessage = 'Server error connecting to backend service.';
+        }
+      }
+    });
   }
 }

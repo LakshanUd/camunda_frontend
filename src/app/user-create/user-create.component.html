@@ -1,44 +1,49 @@
-<h2>Create New User</h2>
+<h2>Create New User (MySQL Database)</h2>
 
-<div style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 500px; background: #fdfdfd;">
+<div style="border: 1px solid #e2e8f0; padding: 24px; border-radius: 8px; max-width: 540px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
   
-  <div *ngIf="errorMessage" style="color: red; background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+  <div *ngIf="errorMessage" style="color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; padding: 12px; margin-bottom: 18px; border-radius: 6px; font-size: 0.9rem;">
     {{ errorMessage }}
   </div>
 
-  <div style="margin-bottom: 15px;">
-    <label style="font-weight: bold; display: block; margin-bottom: 5px;">User ID *</label>
-    <input type="text" [(ngModel)]="userData.id" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Username *</label>
+    <input type="text" [(ngModel)]="userData.username" placeholder="e.g. john_doe" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
   </div>
 
-  <div style="margin-bottom: 15px; display: flex; gap: 15px;">
-    <div style="flex: 1;">
-      <label style="font-weight: bold; display: block; margin-bottom: 5px;">First Name *</label>
-      <input type="text" [(ngModel)]="userData.firstName" style="width: 100%; padding: 8px; box-sizing: border-box;" />
-    </div>
-    <div style="flex: 1;">
-      <label style="font-weight: bold; display: block; margin-bottom: 5px;">Last Name *</label>
-      <input type="text" [(ngModel)]="userData.lastName" style="width: 100%; padding: 8px; box-sizing: border-box;" />
-    </div>
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Full Name *</label>
+    <input type="text" [(ngModel)]="userData.fullName" placeholder="e.g. John Doe" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
   </div>
 
-  <div style="margin-bottom: 15px;">
-    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Email</label>
-    <input type="email" [(ngModel)]="userData.email" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Email Address *</label>
+    <input type="email" [(ngModel)]="userData.email" placeholder="e.g. john@example.com" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
   </div>
 
-  <div style="margin-bottom: 15px;">
-    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Password *</label>
-    <input type="password" [(ngModel)]="userData.password" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Assigned Role *</label>
+    <select [(ngModel)]="userData.role" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;">
+      <option value="ROLE_WORKER">Standard Worker (ROLE_WORKER)</option>
+      <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
+    </select>
   </div>
 
-  <div style="margin-bottom: 20px;">
-    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Repeat Password *</label>
-    <input type="password" [(ngModel)]="userData.passwordRepeat" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Password *</label>
+    <input type="password" [(ngModel)]="userData.password" placeholder="Min 8 chars, 1 upper, 1 number, 1 special char" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+    <small style="color: #64748b; font-size: 0.75rem;">Requires at least 8 characters, 1 uppercase, 1 lowercase, 1 number, and 1 special symbol (@#$%^&+=!_).</small>
   </div>
 
-  <div style="display: flex; justify-content: space-between;">
-    <a routerLink="/admin/users" style="padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;">Cancel</a>
-    <button (click)="onCreateUser()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Save User</button>
+  <div style="margin-bottom: 24px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Repeat Password *</label>
+    <input type="password" [(ngModel)]="userData.passwordRepeat" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <a routerLink="/admin/users" style="padding: 9px 18px; background-color: #f1f5f9; color: #475569; text-decoration: none; border-radius: 6px; font-size: 0.9rem;">Cancel</a>
+    <button (click)="onCreateUser()" [disabled]="loading" style="padding: 9px 18px; background-color: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
+      {{ loading ? 'Saving...' : 'Save User to MySQL' }}
+    </button>
   </div>
 </div>

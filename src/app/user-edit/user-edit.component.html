@@ -1,127 +1,69 @@
-<div style="display: flex; justify-content: space-between; align-items: center;">
-  <h2>Manage User: <span style="color: #007bff;">{{ userId }}</span></h2>
-  <a routerLink="/admin/users" style="padding: 8px 15px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;">&larr; Back to List</a>
-</div>
+<h2>Edit User Profile (MySQL)</h2>
 
-<div style="display: flex; border-bottom: 2px solid #ccc; margin-bottom: 20px;">
-  <button (click)="activeTab = 'Profile'" [style.borderBottom]="activeTab === 'Profile' ? '3px solid #007bff' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Profile</button>
-  <button (click)="activeTab = 'Account'" [style.borderBottom]="activeTab === 'Account' ? '3px solid #007bff' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Account</button>
-  <button (click)="activeTab = 'Groups'" [style.borderBottom]="activeTab === 'Groups' ? '3px solid #007bff' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Groups</button>
-  <button (click)="activeTab = 'Tenants'" [style.borderBottom]="activeTab === 'Tenants' ? '3px solid #007bff' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Tenants</button>
-</div>
+<div style="border: 1px solid #e2e8f0; padding: 24px; border-radius: 8px; max-width: 540px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
 
-<div *ngIf="activeTab === 'Profile'" style="max-width: 500px;">
-  <h3>Update Profile details</h3>
-  <div *ngIf="profileMsg" style="color: white; background: #28a745; padding: 10px; border-radius: 4px; margin-bottom: 15px;">{{ profileMsg }}</div>
-  
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">First Name *</label>
-    <input type="text" [(ngModel)]="profile.firstName" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Last Name *</label>
-    <input type="text" [(ngModel)]="profile.lastName" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Email</label>
-    <input type="email" [(ngModel)]="profile.email" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  
-  <button (click)="updateProfile()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Save Profile</button>
-</div>
+  <div *ngIf="successMessage" style="color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; margin-bottom: 18px; border-radius: 6px; font-size: 0.9rem;">
+    {{ successMessage }}
+  </div>
 
-<div *ngIf="activeTab === 'Account'" style="max-width: 500px;">
-  <h3>Change Password</h3>
-  <div *ngIf="accountMsg" style="color: black; background: #ffc107; padding: 10px; border-radius: 4px; margin-bottom: 15px;">{{ accountMsg }}</div>
+  <div *ngIf="errorMessage" style="color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; padding: 12px; margin-bottom: 18px; border-radius: 6px; font-size: 0.9rem;">
+    {{ errorMessage }}
+  </div>
 
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Current Password *</label>
-    <input type="password" [(ngModel)]="passwords.current" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">New Password *</label>
-    <input type="password" [(ngModel)]="passwords.new" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 20px;"><label style="font-weight: bold; display: block;">Repeat New Password *</label>
-    <input type="password" [(ngModel)]="passwords.repeat" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  
-  <button (click)="updatePassword()" style="padding: 10px 20px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 40px;">Update Password</button>
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Username</label>
+    <input type="text" [value]="user.username" disabled style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #f8fafc; color: #64748b; box-sizing: border-box;" />
+  </div>
 
-  <hr style="border: 1px solid #eee; margin-bottom: 20px;" />
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Full Name *</label>
+    <input type="text" [(ngModel)]="user.fullName" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+  </div>
 
-  <h3 style="color: #dc3545;">Danger Zone</h3>
-  <p style="color: gray;">Once you delete a user, there is no going back. Please be certain.</p>
-  <button (click)="deleteAccount()" style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete Account</button>
-</div>
+  <div style="margin-bottom: 16px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Email Address *</label>
+    <input type="email" [(ngModel)]="user.email" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+  </div>
 
-<div *ngIf="activeTab === 'Groups'">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h3>{{ profile.firstName }}'s Groups</h3>
-    <button (click)="showAddGroup = true" style="padding: 6px 12px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-      <span style="font-size: 18px; line-height: 1;">+</span> Add to a group
+  <div style="margin-bottom: 16px; display: flex; gap: 12px;">
+    <div style="flex: 1;">
+      <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Assigned Role</label>
+      <select [(ngModel)]="selectedRole" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;">
+        <option value="ROLE_WORKER">Standard Worker (ROLE_WORKER)</option>
+        <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
+      </select>
+    </div>
+
+    <div style="flex: 1;">
+      <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.9rem;">Account Status</label>
+      <select [(ngModel)]="user.active" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;">
+        <option [ngValue]="true">Active</option>
+        <option [ngValue]="false">Disabled</option>
+      </select>
+    </div>
+  </div>
+
+  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+
+  <h4 style="margin: 0 0 12px 0; font-size: 1rem; color: #1e293b;">Change Password (Optional)</h4>
+
+  <div style="margin-bottom: 14px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.85rem;">New Password</label>
+    <input type="password" [(ngModel)]="newPassword" placeholder="Leave blank to keep unchanged" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 0.85rem;">Repeat New Password</label>
+    <input type="password" [(ngModel)]="repeatPassword" placeholder="Confirm new password" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; gap: 8px;">
+      <a routerLink="/admin/users" style="padding: 9px 16px; background-color: #f1f5f9; color: #475569; text-decoration: none; border-radius: 6px; font-size: 0.9rem;">Back</a>
+      <button (click)="deleteAccount()" style="padding: 9px 16px; background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">Delete</button>
+    </div>
+    <button (click)="updateProfile()" [disabled]="loading" style="padding: 9px 20px; background-color: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
+      {{ loading ? 'Saving...' : 'Save Changes' }}
     </button>
   </div>
-
-  <div *ngIf="showAddGroup" style="background: #fdfdfd; border: 1px solid #dee2e6; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-    <select [(ngModel)]="selectedGroupId" style="padding: 8px; flex: 1; border-radius: 4px; border: 1px solid #ccc;">
-      <option value="" disabled>Select a group to add...</option>
-      <option *ngFor="let g of availableGroups" [value]="g.id">{{ g.name }} ({{ g.id }})</option>
-    </select>
-    <button (click)="addGroup()" [disabled]="!selectedGroupId" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
-    <button (click)="showAddGroup = false; selectedGroupId = ''" style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-  </div>
-
-  <div *ngIf="availableGroups.length === 0 && showAddGroup" style="color: gray; margin-bottom: 15px; font-style: italic;">
-    This user is already a member of all available groups.
-  </div>
-
-  <table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
-    <tr style="background-color: #f8f9fa;">
-      <th>Group ID</th>
-      <th>Group Name</th>
-      <th>Group Type</th>
-      <th style="width: 100px; text-align: center;">Action</th>
-    </tr>
-    <tr *ngFor="let group of userGroups">
-      <td style="font-weight: bold; color: #007bff;">{{ group.id }}</td>
-      <td>{{ group.name }}</td>
-      <td><span style="background: #e9ecef; padding: 3px 8px; border-radius: 4px; font-size: 14px;">{{ group.type }}</span></td>
-      <td style="text-align: center;">
-        <button (click)="removeGroup(group.id)" style="color: #007bff; background: none; border: none; cursor: pointer; text-decoration: underline;">Remove</button>
-      </td>
-    </tr>
-    <tr *ngIf="userGroups.length === 0">
-      <td colspan="4" style="text-align: center; color: gray; font-style: italic; padding: 20px;">No groups assigned to this user.</td>
-    </tr>
-  </table>
-</div>
-
-<div *ngIf="activeTab === 'Tenants'">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h3>{{ profile.firstName }}'s Tenants</h3>
-    <button (click)="showAddTenant = true" style="padding: 6px 12px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-      <span style="font-size: 18px; line-height: 1;">+</span> Add to a tenant
-    </button>
-  </div>
-
-  <div *ngIf="showAddTenant" style="background: #fdfdfd; border: 1px solid #dee2e6; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-    <select [(ngModel)]="selectedTenantId" style="padding: 8px; flex: 1; border-radius: 4px; border: 1px solid #ccc;">
-      <option value="" disabled>Select a tenant to add...</option>
-      <option *ngFor="let t of availableTenants" [value]="t.id">{{ t.name }} ({{ t.id }})</option>
-    </select>
-    <button (click)="addTenant()" [disabled]="!selectedTenantId" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
-    <button (click)="showAddTenant = false; selectedTenantId = ''" style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-  </div>
-
-  <div *ngIf="availableTenants.length === 0 && showAddTenant" style="color: gray; margin-bottom: 15px; font-style: italic;">
-    This user is already a member of all available tenants.
-  </div>
-
-  <table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse;">
-    <tr style="background-color: #f8f9fa;">
-      <th>Tenant ID</th>
-      <th>Tenant Name</th>
-      <th style="width: 100px; text-align: center;">Action</th>
-    </tr>
-    <tr *ngFor="let tenant of userTenants">
-      <td style="font-weight: bold; color: #20c997;">{{ tenant.id }}</td>
-      <td>{{ tenant.name }}</td>
-      <td style="text-align: center;">
-        <button (click)="removeTenant(tenant.id)" style="color: #007bff; background: none; border: none; cursor: pointer; text-decoration: underline;">Remove</button>
-      </td>
-    </tr>
-    <tr *ngIf="userTenants.length === 0">
-      <td colspan="3" style="text-align: center; color: gray; font-style: italic; padding: 20px;">No tenants assigned to this user.</td>
-    </tr>
-  </table>
 </div>

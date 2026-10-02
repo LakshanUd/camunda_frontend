@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './auth.guard';
 import { adminGuard } from './admin.guard';
 import { LoginComponent } from './login/login.component';
 import { ProcessesComponent } from './processes/processes.component';
@@ -17,26 +18,23 @@ import { TenantCreateComponent } from './tenant-create/tenant-create.component';
 import { TenantEditComponent } from './tenant-edit/tenant-edit.component';
 import { AuthorizationsComponent } from './authorizations/authorizations.component';
 import { MyTasksComponent } from './my-tasks/my-tasks.component';
-import { AuditDashboardComponent } from './audit-dashboard/audit-dashboard.component';
-import { TaskDispatcherComponent } from './admin/task-dispatcher/task-dispatcher.component';
-import { CommandCenterComponent } from './command-center/command-center.component';
-import { ReportsComponent } from './reports/reports.component';
 import { ManageWorkflowsComponent } from './manage-workflows/manage-workflows.component';
+import { WorkflowTasksComponent } from './workflow-tasks/workflow-tasks.component';
+import { WorkflowAssignmentComponent } from './workflow-assignment/workflow-assignment.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
 
-  { path: 'my-tasks', component: MyTasksComponent },
-  { path: 'audit-logs', component: AuditDashboardComponent },
-  { path: 'command-center', component: CommandCenterComponent },
-  { path: 'processes', component: ProcessesComponent },
-  { path: 'active-tasks', component: ActiveTasksComponent },
-  { path: 'completed-tasks', component: CompletedTasksComponent },
-  { path: 'my-profile', component: MyProfileComponent },
-  { path: 'reports', component: ReportsComponent },
-  { path: 'manage-workflows', component: ManageWorkflowsComponent },
+  { path: 'processes', component: ProcessesComponent, canActivate: [adminGuard] },
+  { path: 'workflow-tasks', component: WorkflowTasksComponent, canActivate: [adminGuard] },
+  { path: 'my-tasks', component: MyTasksComponent, canActivate: [authGuard] },
+  { path: 'active-tasks', redirectTo: '/my-tasks', pathMatch: 'full' },
+  { path: 'completed-tasks', component: CompletedTasksComponent, canActivate: [authGuard] },
+  { path: 'my-profile', component: MyProfileComponent, canActivate: [authGuard] },
+  { path: 'manage-workflows',      component: ManageWorkflowsComponent,      canActivate: [adminGuard] },
+  { path: 'workflow-assignment',   component: WorkflowAssignmentComponent,   canActivate: [adminGuard] },
 
-  // Protected Admin Routes (Removed the unprotected duplicates)
+  // Protected Admin Routes
   { path: 'admin/users', component: UserListComponent, canActivate: [adminGuard] },
   { path: 'admin/users/create', component: UserCreateComponent, canActivate: [adminGuard] },
   { path: 'admin/users/edit/:id', component: UserEditComponent, canActivate: [adminGuard] },
@@ -50,7 +48,6 @@ export const routes: Routes = [
   { path: 'admin/tenants/edit/:id', component: TenantEditComponent, canActivate: [adminGuard] },
   
   { path: 'admin/authorizations', component: AuthorizationsComponent, canActivate: [adminGuard] },
-  { path: 'admin/dispatcher', component: TaskDispatcherComponent, canActivate: [adminGuard] },
   
   { path: '', redirectTo: '/login', pathMatch: 'full' }
 ];

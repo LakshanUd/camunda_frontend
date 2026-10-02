@@ -43,7 +43,7 @@
           <span *ngIf="auth.userId" style="color: #007bff;">&#128100; {{ auth.userId }}</span>
           <span *ngIf="auth.groupId" style="color: #6f42c1;">&#128101; {{ auth.groupId }}</span>
         </td>
-        <td style="font-family: monospace; font-size: 13px;">{{ auth.permissions.join(', ') }}</td>
+        <td style="font-family: monospace; font-size: 13px;">{{ (auth.permissions || []).join(', ') }}</td>
         <td style="font-family: monospace;">{{ auth.resourceId }}</td>
         <td style="text-align: right; white-space: nowrap;">
           <button (click)="openEditModal(auth)" style="color: #ffc107; background: none; border: none; cursor: pointer; text-decoration: underline; font-weight: bold; margin-right: 12px;">Edit</button>
