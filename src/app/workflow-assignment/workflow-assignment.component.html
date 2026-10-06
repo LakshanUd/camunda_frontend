@@ -137,7 +137,7 @@
 
     <!-- Strategy legend -->
     <div class="strategy-legend">
-      <div class="legend-item"><span class="badge badge-star">★ Initiator</span> Assigns to the user who started the workflow</div>
+      <div class="legend-item"><span class="badge badge-star">★ Started user (Initiator)</span> Assigns to the user who started the workflow</div>
       <div class="legend-item"><span class="badge badge-dynamic">⚡ Load Balance</span> Balances workload across authorized users</div>
       <div class="legend-item"><span class="badge badge-user">👤 Specific User</span> Statically assigns to a specific person</div>
       <div class="legend-item"><span class="badge badge-group">👥 Group Pool</span> Places task in group pool for claiming</div>
@@ -279,7 +279,7 @@
           
           <div class="strategy-card" [class.strategy-card-selected]="ruleType === 'STAR'" (click)="ruleType = 'STAR'">
             <div class="strategy-icon">★</div>
-            <div class="strategy-name">STAR (Initiator)</div>
+            <div class="strategy-name">Started user (Initiator)</div>
             <div class="strategy-desc">Assigns task to whoever started the workflow</div>
           </div>
 

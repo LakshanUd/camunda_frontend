@@ -1,75 +1,286 @@
 <div class="page-header">
   <div>
     <h2 class="page-title">
-      <i class="pi pi-check-square" style="color: #10b981;"></i> Completed Tasks
+      <i class="pi pi-check-square" style="color: #10b981;"></i> Tasks
     </h2>
     <p class="page-subtitle">
-      Historical audit trail of completed tasks and submitted form data
+      Monitor and audit running workflow instances, completed tasks, and execution history
     </p>
   </div>
-  <button (click)="loadCompletedTasks()" class="refresh-btn">
-    <i class="pi pi-refresh"></i> Refresh History
-  </button>
+  <div class="header-controls">
+    <!-- Status Filter (shown on instances view) -->
+    <div class="filter-box" *ngIf="currentView === 'INSTANCES'">
+      <i class="pi pi-compass" style="color: #a855f7; font-size: 13px;"></i>
+      <label class="filter-label" for="statusFilter">Status:</label>
+      <select id="statusFilter" class="filter-select" [(ngModel)]="selectedStatus">
+        <option value="" disabled selected>-- Select Status --</option>
+        <option value="ACTIVE">Running (Active)</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="ALL">All Statuses</option>
+      </select>
+    </div>
+
+    <!-- Workflow Filter (shown on instances view) -->
+    <div class="filter-box" *ngIf="currentView === 'INSTANCES'">
+      <i class="pi pi-filter" style="color: #38bdf8; font-size: 13px;"></i>
+      <label class="filter-label" for="workflowFilter">Workflow:</label>
+      <select id="workflowFilter" class="filter-select" [(ngModel)]="selectedWorkflowKey">
+        <option value="">All Workflows</option>
+        <option *ngFor="let wf of workflows" [value]="wf.key">
+          {{ wf.name || wf.key }} (v{{ wf.version }})
+        </option>
+      </select>
+    </div>
+
+    <!-- Filter Button -->
+    <button (click)="applyFilter()" class="btn-filter" *ngIf="currentView === 'INSTANCES'" [disabled]="loading">
+      <i class="pi pi-filter"></i> Filter
+    </button>
+
+    <!-- Refresh Button -->
+    <button (click)="refreshView()" class="refresh-btn">
+      <i class="pi pi-refresh"></i> Refresh
+    </button>
+  </div>
 </div>
 
-<!-- COMPLETED TASKS TABLE -->
-<div class="table-card">
+<!-- ========================================================================= -->
+<!-- LEVEL 1: PROCESS INSTANCES TABLE (ACTIVE & COMPLETED)                     -->
+<!-- ========================================================================= -->
+<div class="table-card" *ngIf="currentView === 'INSTANCES'">
   
-  <div *ngIf="loading" style="padding: 40px; text-align: center; color: #94a3b8;">
-    <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #a855f7; margin-bottom: 12px;"></i>
-    <div>Loading task history...</div>
+  <!-- Initial Blank State (Before Filtering) -->
+  <div *ngIf="!hasFiltered && !loading" class="blank-filter-state">
+    <div class="blank-state-icon">
+      <i class="pi pi-sliders-h"></i>
+    </div>
+    <h3 class="blank-state-title">Select Status & Filter</h3>
+    <p class="blank-state-text">
+      Please select a status from the filter controls above and click <strong>Filter</strong> to load workflow instances.
+    </p>
+    <div *ngIf="filterError" class="filter-error-msg">
+      <i class="pi pi-exclamation-triangle"></i> {{ filterError }}
+    </div>
   </div>
 
-  <table *ngIf="!loading" class="tasks-table">
+  <!-- Loading State -->
+  <div *ngIf="loading" style="padding: 50px 20px; text-align: center; color: #94a3b8;">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2.2rem; color: #a855f7; margin-bottom: 14px;"></i>
+    <div style="font-size: 15px; font-weight: 500;">Loading workflow instances...</div>
+  </div>
+
+  <!-- Instances Table (Only shown after filter is applied and not loading) -->
+  <div *ngIf="hasFiltered && !loading">
+    <table class="tasks-table">
+      <thead>
+        <tr>
+          <th>Instance ID</th>
+          <th>Workflow & Version</th>
+          <th>Status</th>
+          <th>Created Date</th>
+          <th>Completed Date</th>
+          <th>Who Started</th>
+          <th>Duration</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let instance of paginatedInstances" class="task-row">
+          <!-- Instance ID -->
+          <td class="cell-bold">
+            <div class="id-text" title="{{ instance.id }}">
+              {{ instance.id?.substring(0, 16) }}...
+            </div>
+            <div class="meta-sub">Key: {{ instance.businessKey || instance.id }}</div>
+          </td>
+
+          <!-- Workflow & Version -->
+          <td style="padding: 16px 20px;">
+            <div style="font-weight: 600; color: #f8fafc;">
+              {{ instance.processDefinitionName || instance.processDefinitionKey }}
+              <span class="version-badge">v{{ instance.processDefinitionVersion || '1' }}</span>
+            </div>
+            <div class="meta-sub">{{ instance.processDefinitionKey }}</div>
+          </td>
+
+          <!-- Status -->
+          <td style="padding: 16px 20px;">
+            <span class="badge-running" *ngIf="isInstanceRunning(instance)">
+              <i class="pi pi-spin pi-spinner" style="font-size: 10px;"></i> Running
+            </span>
+            <span class="badge-completed" *ngIf="!isInstanceRunning(instance)">
+              <i class="pi pi-check" style="font-size: 10px;"></i> Completed
+            </span>
+          </td>
+
+          <!-- Created Date -->
+          <td style="padding: 16px 20px; color: #94a3b8; font-size: 13px;">
+            {{ instance.startTime | date:'medium' }}
+          </td>
+
+          <!-- Completed Date -->
+          <td style="padding: 16px 20px; color: #94a3b8; font-size: 13px;">
+            <span *ngIf="instance.endTime">{{ instance.endTime | date:'medium' }}</span>
+            <span *ngIf="!instance.endTime" style="color: #38bdf8; display: inline-flex; align-items: center; gap: 5px;">
+              <i class="pi pi-clock" style="font-size: 11px;"></i> In Progress
+            </span>
+          </td>
+
+          <!-- Who Started -->
+          <td style="padding: 16px 20px;">
+            <span class="starter-badge" *ngIf="instance.startUserId">
+              <i class="pi pi-user" style="font-size: 11px;"></i>
+              {{ instance.startUserName ? instance.startUserName + ' (' + instance.startUserId + ')' : instance.startUserId }}
+            </span>
+            <span class="starter-badge" *ngIf="!instance.startUserId" style="color: #94a3b8; border-color: #334155; background: rgba(51, 65, 85, 0.2);">
+              <i class="pi pi-bolt" style="font-size: 11px;"></i> System
+            </span>
+          </td>
+
+          <!-- Duration -->
+          <td style="padding: 16px 20px;">
+            <span class="duration-badge" [ngClass]="{'duration-running': isInstanceRunning(instance)}">
+              <i *ngIf="isInstanceRunning(instance)" class="pi pi-spin pi-spinner" style="font-size: 10px; margin-right: 4px;"></i>
+              {{ formatDuration(instance.duration, isInstanceRunning(instance), instance.startTime) }}
+            </span>
+          </td>
+
+          <!-- Action: "Tasks" button -->
+          <td style="padding: 16px 20px; text-align: right;">
+            <button (click)="viewInstanceTasks(instance)" class="btn-tasks">
+              <i class="pi pi-list"></i> Tasks
+            </button>
+          </td>
+        </tr>
+
+        <tr *ngIf="instances.length === 0">
+          <td colspan="8" style="padding: 40px; text-align: center; color: #64748b;">
+            <i class="pi pi-history" style="font-size: 2.5rem; margin-bottom: 10px; display: block;"></i>
+            No process instances found for this filter.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination Footer: Max 20 instances per page -->
+    <div class="pagination-footer" *ngIf="instances.length > 0">
+      <div class="pagination-summary">
+        Showing <span class="highlight">{{ startIndex }}</span> to <span class="highlight">{{ endIndex }}</span> of <span class="highlight">{{ instances.length }}</span> instances
+      </div>
+      <div class="pagination-nav" *ngIf="totalPages > 1">
+        <button class="pag-btn" (click)="goToPage(1)" [disabled]="currentPage === 1" title="First Page">
+          <i class="pi pi-angle-double-left"></i>
+        </button>
+        <button class="pag-btn" (click)="prevPage()" [disabled]="currentPage === 1">
+          <i class="pi pi-chevron-left"></i> Prev
+        </button>
+        <div class="pag-page-indicator">
+          Page {{ currentPage }} of {{ totalPages }}
+        </div>
+        <button class="pag-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+          Next <i class="pi pi-chevron-right"></i>
+        </button>
+        <button class="pag-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages" title="Last Page">
+          <i class="pi pi-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- LEVEL 2: RELATED TASKS TABLE FOR SELECTED INSTANCE                         -->
+<!-- ========================================================================= -->
+<div class="table-card" *ngIf="currentView === 'TASKS'">
+  <!-- Sub-header bar with back button & instance summary -->
+  <div class="tasks-view-header">
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <button (click)="backToInstances()" class="btn-back">
+        <i class="pi pi-arrow-left"></i> Back to Instances
+      </button>
+      <div>
+        <div style="font-size: 15px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+          Tasks for Instance:
+          <span class="id-text" style="font-size: 14px;">{{ selectedInstance?.id }}</span>
+          <span class="version-badge">v{{ selectedInstance?.processDefinitionVersion }}</span>
+        </div>
+        <div class="meta-sub">
+          Workflow: <strong style="color: #cbd5e1;">{{ selectedInstance?.processDefinitionName || selectedInstance?.processDefinitionKey }}</strong>
+          &bull; Started By: <span style="color: #38bdf8;">{{ selectedInstance?.startUserName || selectedInstance?.startUserId || 'System' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loadingTasks" style="padding: 40px; text-align: center; color: #94a3b8;">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #38bdf8; margin-bottom: 12px;"></i>
+    <div>Loading tasks for this instance...</div>
+  </div>
+
+  <table *ngIf="!loadingTasks" class="tasks-table">
     <thead>
       <tr>
-        <th>Task Name</th>
-        <th>Process Definition</th>
-        <th>Assignee</th>
-        <th>Completed At</th>
+        <th>Task ID & Name</th>
+        <th>Status</th>
+        <th>Assign Date (Started)</th>
+        <th>Completed Date</th>
+        <th>Who Completed</th>
         <th>Duration</th>
         <th style="text-align: right;">Action</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let task of completedTasks" class="task-row">
-        <!-- Task Name & ID -->
-        <td class="task-name-cell">
-          <div class="task-title">{{ task.name || 'Task ' + (task.taskDefinitionKey || task.id) }}</div>
-          <div class="task-meta-id">ID: {{ task.id }}</div>
+      <tr *ngFor="let task of instanceTasks" class="task-row">
+        <!-- Task ID & Name -->
+        <td class="cell-bold">
+          <div style="color: #f8fafc; font-size: 14px;">{{ task.name || task.taskDefinitionKey || task.id }}</div>
+          <div class="id-text" style="font-size: 12px; margin-top: 2px;">ID: {{ task.id }}</div>
         </td>
 
-        <!-- Process Definition -->
+        <!-- Status -->
         <td style="padding: 16px 20px;">
-          <span class="process-badge">
-            {{ task.processDefinitionKey || 'N/A' }}
+          <span class="badge-running" *ngIf="!task.endTime">
+            <i class="pi pi-spin pi-spinner" style="font-size: 10px;"></i> In Progress
+          </span>
+          <span class="badge-completed" *ngIf="task.endTime">
+            <i class="pi pi-check" style="font-size: 10px;"></i> Completed
           </span>
         </td>
 
-        <!-- Assignee -->
+        <!-- Assign Date (startTime) -->
+        <td style="padding: 16px 20px; color: #94a3b8; font-size: 13px;">
+          {{ task.startTime | date:'medium' }}
+        </td>
+
+        <!-- Completed Date (endTime) -->
+        <td style="padding: 16px 20px; color: #94a3b8; font-size: 13px;">
+          <span *ngIf="task.endTime">{{ task.endTime | date:'medium' }}</span>
+          <span *ngIf="!task.endTime" style="color: #38bdf8; display: inline-flex; align-items: center; gap: 5px;">
+            <i class="pi pi-clock" style="font-size: 11px;"></i> In Progress
+          </span>
+        </td>
+
+        <!-- Who Completed -->
         <td style="padding: 16px 20px;">
           <span *ngIf="task.assignee" class="assignee-badge">
-            <i class="pi pi-user" style="font-size: 11px;"></i>
+            <i class="pi pi-user-check" style="font-size: 11px;"></i>
             {{ task.assigneeName ? task.assigneeName + ' (' + task.assignee + ')' : task.assignee }}
           </span>
-          <span *ngIf="!task.assignee" class="unassigned-badge">
-            <i class="pi pi-clock" style="font-size: 11px;"></i> Unassigned
+          <span *ngIf="!task.assignee" class="unassigned-badge" style="color: #94a3b8; font-size: 12px;">
+            <i class="pi pi-clock" style="font-size: 11px;"></i> Unassigned / Group
           </span>
-        </td>
-
-        <!-- Completed At -->
-        <td style="padding: 16px 20px; color: #94a3b8; font-size: 13px;">
-          {{ task.endTime | date:'medium' }}
         </td>
 
         <!-- Duration -->
         <td style="padding: 16px 20px;">
-          <span class="duration-badge">
-            {{ formatDuration(task.duration) }}
+          <span class="duration-badge" [ngClass]="{'duration-running': !task.endTime}">
+            <i *ngIf="!task.endTime" class="pi pi-spin pi-spinner" style="font-size: 10px; margin-right: 4px;"></i>
+            {{ formatDuration(task.duration, !task.endTime, task.startTime) }}
           </span>
         </td>
 
-        <!-- Actions: Button named "Details" -->
+        <!-- Action: "Details" button -->
         <td style="padding: 16px 20px; text-align: right;">
           <button (click)="openDetailsModal(task)" class="btn-details">
             <i class="pi pi-info-circle"></i> Details
@@ -77,10 +288,10 @@
         </td>
       </tr>
 
-      <tr *ngIf="!loading && completedTasks.length === 0">
-        <td colspan="6" style="padding: 40px; text-align: center; color: #64748b;">
-          <i class="pi pi-history" style="font-size: 2.5rem; margin-bottom: 10px; display: block;"></i>
-          No completed tasks found.
+      <tr *ngIf="!loadingTasks && instanceTasks.length === 0">
+        <td colspan="7" style="padding: 40px; text-align: center; color: #64748b;">
+          <i class="pi pi-inbox" style="font-size: 2.5rem; margin-bottom: 10px; display: block;"></i>
+          No tasks found for this process instance.
         </td>
       </tr>
     </tbody>
@@ -88,7 +299,7 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- COMPREHENSIVE TASK DETAILS MODAL (Clean, Human-Readable, Non-Code UI)     -->
+<!-- LEVEL 3: COMPREHENSIVE TASK DETAILS MODAL                                  -->
 <!-- ========================================================================= -->
 <div *ngIf="showDetailsModal && selectedTask" class="modal-backdrop">
   <div class="modal-dialog">
@@ -100,17 +311,26 @@
           <h3 class="modal-title">
             <i class="pi pi-check-circle" style="color: #10b981;"></i> Task Details
           </h3>
-          <span class="status-completed-pill">
+          <span class="status-completed-pill" *ngIf="selectedTask.endTime">
             <i class="pi pi-check"></i> Completed
           </span>
+          <span class="badge-running" *ngIf="!selectedTask.endTime" style="font-size: 12px; padding: 4px 10px;">
+            <i class="pi pi-spin pi-spinner"></i> In Progress
+          </span>
         </div>
-        <div class="modal-task-name">
+        <div class="modal-task-name" style="color: #cbd5e1; font-size: 14px; margin-top: 2px;">
           {{ selectedTask.name || selectedTask.taskDefinitionKey || selectedTask.id }}
         </div>
       </div>
-      <button (click)="closeDetailsModal()" class="modal-close-btn" title="Close">
-        <i class="pi pi-times"></i>
-      </button>
+      
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button (click)="openFormModal(selectedTask)" class="btn-view-form">
+          <i class="pi pi-file"></i> View Form
+        </button>
+        <button (click)="closeDetailsModal()" class="modal-close-btn" title="Close">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Modal Body -->
@@ -126,7 +346,7 @@
           <div class="metric-info">
             <span class="metric-label">Workflow Process</span>
             <span class="metric-val">{{ selectedTask.processDefinitionKey || 'N/A' }}</span>
-            <span class="metric-sub" title="{{ selectedTask.processInstanceId }}">Instance: {{ selectedTask.processInstanceId?.substring(0, 18) }}...</span>
+            <span class="metric-sub" title="{{ selectedTask.processInstanceId }}">Instance: {{ selectedTask.processInstanceId?.substring(0, 16) }}...</span>
           </div>
         </div>
 
@@ -148,9 +368,9 @@
             <i class="pi pi-calendar"></i>
           </div>
           <div class="metric-info">
-            <span class="metric-label">Completed At</span>
-            <span class="metric-val">{{ selectedTask.endTime | date:'mediumDate' }}</span>
-            <span class="metric-sub">{{ selectedTask.endTime | date:'shortTime' }}</span>
+            <span class="metric-label">{{ selectedTask.endTime ? 'Completed At' : 'Started At' }}</span>
+            <span class="metric-val">{{ (selectedTask.endTime || selectedTask.startTime) | date:'mediumDate' }}</span>
+            <span class="metric-sub">{{ (selectedTask.endTime || selectedTask.startTime) | date:'shortTime' }}</span>
           </div>
         </div>
 
@@ -161,7 +381,7 @@
           </div>
           <div class="metric-info">
             <span class="metric-label">Duration</span>
-            <span class="metric-val">{{ formatDuration(selectedTask.duration) }}</span>
+            <span class="metric-val">{{ formatDuration(selectedTask.duration, !selectedTask.endTime, selectedTask.startTime) }}</span>
             <span class="metric-sub">Started: {{ selectedTask.startTime | date:'shortDate' }}</span>
           </div>
         </div>
@@ -169,11 +389,11 @@
 
       <!-- 2. Task Variables / Form Submission Section -->
       <div>
-        <div class="section-header">
-          <h4 class="section-title">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4 style="color: #f8fafc; font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px;">
             <i class="pi pi-file-edit" style="color: #38bdf8;"></i> Form Submission & Recorded Data
           </h4>
-          <span *ngIf="!loadingDetails && businessVariables.length > 0" class="count-chip">
+          <span *ngIf="!loadingDetails && businessVariables.length > 0" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;">
             {{ businessVariables.length }} field{{ businessVariables.length > 1 ? 's' : '' }}
           </span>
         </div>
@@ -196,7 +416,7 @@
             </div>
 
             <!-- Value: Boolean (Yes / No badge) -->
-            <div *ngIf="item.isBoolean" class="variable-value-box">
+            <div *ngIf="item.isBoolean">
               <span *ngIf="item.booleanValue" class="badge-boolean badge-true">
                 <i class="pi pi-check"></i> Yes
               </span>
@@ -206,33 +426,30 @@
             </div>
 
             <!-- Value: Date -->
-            <div *ngIf="item.isDate" class="variable-value-box">
-              <span class="val-date">
-                <i class="pi pi-calendar"></i>
-                {{ item.dateValue | date:'medium' }}
-              </span>
+            <div *ngIf="item.isDate" style="color: #38bdf8; font-size: 13px;">
+              <i class="pi pi-calendar"></i> {{ item.dateValue | date:'medium' }}
             </div>
 
             <!-- Value: Number -->
-            <div *ngIf="item.isNumber" class="variable-value-box">
-              <span class="val-number">{{ item.value }}</span>
+            <div *ngIf="item.isNumber" style="color: #f8fafc; font-size: 14px; font-weight: 600;">
+              {{ item.value }}
             </div>
 
             <!-- Value: Text / String -->
-            <div *ngIf="item.isText && !item.isDate" class="variable-value-box">
-              <span class="val-text">{{ item.value || '(Empty)' }}</span>
+            <div *ngIf="item.isText && !item.isDate" style="color: #f8fafc; font-size: 13px; word-break: break-word;">
+              {{ item.value || '(Empty)' }}
             </div>
 
-            <!-- Value: Nested JSON Object/Array (Formatted, NOT code) -->
-            <div *ngIf="item.isJson" class="nested-json-container">
-              <div *ngIf="isObject(item.parsedJson)" class="nested-props-grid">
-                <div *ngFor="let key of getObjectKeys(item.parsedJson)" class="nested-prop-row">
-                  <span class="nested-prop-label">{{ formatVariableName(key) }}:</span>
-                  <span class="nested-prop-value">{{ item.parsedJson[key] }}</span>
+            <!-- Value: Nested JSON Object/Array -->
+            <div *ngIf="item.isJson" style="font-size: 12px; color: #cbd5e1;">
+              <div *ngIf="isObject(item.parsedJson)">
+                <div *ngFor="let key of getObjectKeys(item.parsedJson)" style="margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">{{ formatVariableName(key) }}:</span>
+                  <span style="color: #f8fafc; margin-left: 6px;">{{ item.parsedJson[key] }}</span>
                 </div>
               </div>
-              <div *ngIf="isArray(item.parsedJson)" class="nested-array-chips">
-                <span *ngFor="let entry of item.parsedJson" class="array-chip">{{ entry }}</span>
+              <div *ngIf="isArray(item.parsedJson)" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span *ngFor="let entry of item.parsedJson" style="background: #334155; padding: 2px 8px; border-radius: 4px;">{{ entry }}</span>
               </div>
             </div>
 
@@ -240,26 +457,26 @@
         </div>
 
         <!-- Empty state when no business variables -->
-        <div *ngIf="!loadingDetails && businessVariables.length === 0" class="empty-vars-box">
-          <i class="pi pi-inbox" style="font-size: 2rem; color: #64748b; margin-bottom: 8px; display: block;"></i>
+        <div *ngIf="!loadingDetails && businessVariables.length === 0" style="padding: 24px; text-align: center; color: #64748b; background: #162032; border-radius: 8px;">
+          <i class="pi pi-inbox" style="font-size: 1.8rem; color: #64748b; margin-bottom: 6px; display: block;"></i>
           No form input fields recorded for this task.
         </div>
 
         <!-- Optional Collapsible System Variables Section -->
         <div *ngIf="!loadingDetails && systemVariables.length > 0" style="margin-top: 16px;">
-          <button (click)="showSystemVars = !showSystemVars" class="btn-toggle-system">
+          <button (click)="showSystemVars = !showSystemVars" style="background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
             <i class="pi" [ngClass]="showSystemVars ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
             {{ showSystemVars ? 'Hide' : 'Show' }} System Routing Variables ({{ systemVariables.length }})
           </button>
 
-          <div *ngIf="showSystemVars" class="variables-grid" style="margin-top: 12px;">
-            <div *ngFor="let item of systemVariables" class="variable-card" style="opacity: 0.9; background: #0f172a;">
+          <div *ngIf="showSystemVars" class="variables-grid" style="margin-top: 10px;">
+            <div *ngFor="let item of systemVariables" class="variable-card" style="opacity: 0.85; background: #0f172a;">
               <div class="variable-label-row">
                 <span class="variable-label" style="color: #94a3b8;">{{ item.displayName }}</span>
                 <span class="variable-tech-key">{{ item.originalName }}</span>
               </div>
-              <div class="variable-value-box">
-                <span class="val-text" style="color: #cbd5e1;">{{ item.value }}</span>
+              <div style="color: #cbd5e1; font-size: 12px;">
+                {{ item.value }}
               </div>
             </div>
           </div>
@@ -271,11 +488,85 @@
 
     <!-- Modal Footer -->
     <div class="modal-footer">
-      <div class="footer-task-id">
+      <div class="footer-info">
         Task ID: <span style="color: #38bdf8;">{{ selectedTask.id }}</span>
       </div>
-      <button (click)="closeDetailsModal()" class="btn-close-modal">
-        Close Window
+      <div style="display: flex; gap: 10px;">
+        <button (click)="openFormModal(selectedTask)" class="btn-view-form">
+          <i class="pi pi-file"></i> View Form
+        </button>
+        <button (click)="closeDetailsModal()" class="btn-close-modal">
+          Close Window
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- LEVEL 4: VIEW COMPLETED FORM MODAL (Read-Only Form-JS)                    -->
+<!-- ========================================================================= -->
+<div *ngIf="showFormModal" class="modal-backdrop">
+  <div class="modal-dialog modal-dialog-large">
+    
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <div class="modal-header-top">
+          <h3 class="modal-title">
+            <i class="pi pi-file" style="color: #10b981;"></i> Completed Form Viewer
+          </h3>
+          <span class="status-readonly-pill">
+            <i class="pi pi-lock"></i> Read-Only Audit View
+          </span>
+        </div>
+        <div class="meta-sub" style="font-size: 13px; color: #94a3b8; margin-top: 2px;">
+          Task: <strong style="color: #f8fafc;">{{ selectedTask?.name || selectedTask?.taskDefinitionKey || selectedTask?.id }}</strong>
+          &bull; Instance: <span class="id-text">{{ selectedTask?.processInstanceId }}</span>
+        </div>
+      </div>
+      <button (click)="closeFormModal()" class="modal-close-btn" title="Close">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body" style="background: #0b1120;">
+      
+      <!-- Spinner when loading schema -->
+      <div *ngIf="loadingForm" style="padding: 60px; text-align: center; color: #94a3b8;">
+        <i class="pi pi-spin pi-spinner" style="font-size: 2.5rem; color: #10b981; margin-bottom: 15px;"></i>
+        <div style="font-size: 15px; font-weight: 600; color: #f8fafc;">Loading form schema and submitted responses...</div>
+      </div>
+
+      <!-- No Schema State -->
+      <div *ngIf="!loadingForm && !hasFormSchema" style="padding: 40px; text-align: center; background: #1e293b; border-radius: 12px; border: 1px solid #334155;">
+        <i class="pi pi-info-circle" style="font-size: 2.5rem; color: #38bdf8; margin-bottom: 12px; display: block;"></i>
+        <h4 style="color: #f8fafc; margin-bottom: 8px;">No Visual Form Schema Available</h4>
+        <p style="color: #94a3b8; font-size: 14px; max-width: 500px; margin: 0 auto;">
+          {{ formMessage || 'This task does not have a deployed Camunda .form schema. All recorded data submitted with this task can be inspected in the Details window.' }}
+        </p>
+      </div>
+
+      <!-- Crisp White Form-JS Card container -->
+      <div [style.display]="(!loadingForm && hasFormSchema) ? 'block' : 'none'">
+        <div style="margin-bottom: 12px; color: #94a3b8; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+          <i class="pi pi-info-circle" style="color: #10b981;"></i>
+          The form below displays the exact submitted input values at completion time. Modifying fields is disabled.
+        </div>
+        <div id="history-form-container" class="history-form-card"></div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <div class="footer-info">
+        Task ID: <span style="color: #38bdf8;">{{ selectedTask?.id }}</span>
+      </div>
+      <button (click)="closeFormModal()" class="btn-close-modal">
+        Close Form
       </button>
     </div>
 

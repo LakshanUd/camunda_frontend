@@ -34,16 +34,12 @@
         <i class="pi pi-sitemap" style="color: #38bdf8;"></i> Workflows
       </a>
 
-      <a routerLink="/workflow-tasks" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
+      <a routerLink="/tasks" routerLinkActive="active-menu-item" class="sidebar-link">
         <i class="pi pi-list-check" style="color: #38bdf8;"></i> Tasks
       </a>
 
       <a routerLink="/my-tasks" routerLinkActive="active-menu-item" class="sidebar-link">
         <i class="pi pi-check-square" style="color: #10b981;"></i> My Tasks
-      </a>
-
-      <a routerLink="/completed-tasks" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-history" style="color: #a855f7;"></i> Completed Tasks
       </a>
 
       <a routerLink="/workflow-assignment" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">

@@ -279,7 +279,7 @@ export class WorkflowAssignmentComponent implements OnInit {
 
   getRoutingLabel(type: string): string {
     switch (type) {
-      case 'STAR':         return '★ Initiator';
+      case 'STAR':         return '★ Started user (Initiator)';
       case 'DYNAMIC_USER': return '⚡ Load Balance';
       case 'SELECT_USER':  return '👤 Specific User';
       case 'SELECT_GROUP': return '👥 Group Pool';

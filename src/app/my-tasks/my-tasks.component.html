@@ -100,9 +100,14 @@
           <!-- ASSIGNMENT STATUS -->
           <td style="padding: 16px 20px;">
             <!-- DIRECT ASSIGNEE (YOU) -->
-            <div *ngIf="isDirectlyAssigned(task)" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
-              <i class="pi pi-user-check"></i>
-              <span>Direct Assignee (You)</span>
+            <div *ngIf="isDirectlyAssigned(task)" style="display: inline-flex; flex-direction: column; gap: 4px;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <i class="pi pi-user-check"></i>
+                <span>Direct Assignee (You)</span>
+              </div>
+              <small *ngIf="task.candidateGroup" style="color: #c084fc; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="pi pi-users" style="font-size: 10px;"></i> Claimed from: {{ task.candidateGroupName || task.candidateGroup }}
+              </small>
             </div>
 
             <!-- CANDIDATE GROUP POOL -->
@@ -126,9 +131,9 @@
             <div>{{ task.created | date:'MMM d, y, h:mm a' }}</div>
           </td>
 
-          <!-- ACTION BUTTONS: Do Task ONLY shows for the assigned user -->
+          <!-- ACTION BUTTONS: Do Task and Unclaim for assigned users -->
           <td style="padding: 16px 20px; text-align: right;">
-            <div style="display: inline-flex; gap: 8px; justify-content: flex-end;">
+            <div style="display: inline-flex; gap: 8px; justify-content: flex-end; align-items: center;">
               <!-- Claim button for unassigned group pool tasks -->
               <button *ngIf="!task.assignee && task.candidateGroup" 
                 (click)="claimTask(task, $event)"
@@ -142,6 +147,14 @@
                 (click)="openCompleteModal(task)"
                 style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4); transition: all 0.2s;">
                 <i class="pi pi-pencil"></i> Do Task
+              </button>
+
+              <!-- Unclaim button: shows when task was claimed from a group pool -->
+              <button *ngIf="canUnclaim(task)"
+                (click)="unclaimTask(task, $event)"
+                title="Release this task back to the group pool"
+                style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <i class="pi pi-undo"></i> Unclaim
               </button>
             </div>
           </td>

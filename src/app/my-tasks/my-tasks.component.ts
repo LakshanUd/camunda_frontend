@@ -84,16 +84,32 @@ export class MyTasksComponent implements OnInit {
     return !!task.assignee && (task.assignee === currentUsername || task.assignee === this.authService.getCurrentUserId());
   }
 
+  canUnclaim(task: any): boolean {
+    return this.isDirectlyAssigned(task) && !!(task.candidateGroup || (task.candidateGroups && task.candidateGroups.length > 0));
+  }
+
   claimTask(task: any, event?: Event): void {
     if (event) event.stopPropagation();
     const currentUsername = this.authService.getCurrentUsername();
-    this.http.post(`http://localhost:8082/api/tasks/${task.id}/assign`, { userId: currentUsername }).subscribe({
+    this.http.post(`http://localhost:8082/api/tasks/${task.id}/claim`, { userId: currentUsername }).subscribe({
       next: () => {
         task.assignee = currentUsername;
         task.assigneeName = currentUsername;
         this.loadMyTasks();
       },
       error: (err) => alert('Failed to claim task: ' + (err.error?.message || err.message))
+    });
+  }
+
+  unclaimTask(task: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    const groupId = task.candidateGroup || (task.candidateGroups && task.candidateGroups.length > 0 ? task.candidateGroups[0] : null);
+
+    this.http.post(`http://localhost:8082/api/tasks/${task.id}/unclaim`, { groupId: groupId }).subscribe({
+      next: () => {
+        this.loadMyTasks();
+      },
+      error: (err) => alert('Failed to unclaim task: ' + (err.error?.message || err.message))
     });
   }
 

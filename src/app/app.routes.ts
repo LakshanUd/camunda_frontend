@@ -26,10 +26,11 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
 
   { path: 'processes', component: ProcessesComponent, canActivate: [adminGuard] },
-  { path: 'workflow-tasks', component: WorkflowTasksComponent, canActivate: [adminGuard] },
+  { path: 'tasks', component: CompletedTasksComponent, canActivate: [authGuard] },
+  { path: 'completed-tasks', redirectTo: '/tasks', pathMatch: 'full' },
+  { path: 'workflow-tasks', redirectTo: '/tasks', pathMatch: 'full' },
   { path: 'my-tasks', component: MyTasksComponent, canActivate: [authGuard] },
   { path: 'active-tasks', redirectTo: '/my-tasks', pathMatch: 'full' },
-  { path: 'completed-tasks', component: CompletedTasksComponent, canActivate: [authGuard] },
   { path: 'my-profile', component: MyProfileComponent, canActivate: [authGuard] },
   { path: 'manage-workflows',      component: ManageWorkflowsComponent,      canActivate: [adminGuard] },
   { path: 'workflow-assignment',   component: WorkflowAssignmentComponent,   canActivate: [adminGuard] },
