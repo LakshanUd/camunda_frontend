@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -12,28 +12,47 @@ import { Form } from '@bpmn-io/form-js';
   templateUrl: './my-tasks.component.html',
   styleUrls: ['./my-tasks.component.css']
 })
-export class MyTasksComponent implements OnInit {
+export class MyTasksComponent implements OnInit, OnDestroy {
   tasks: any[] = [];
   users: any[] = [];
   loading = true;
   activeFilter: 'ALL' | 'DIRECT' | 'GROUP' = 'ALL';
+  searchQuery = '';
 
-  // Task Completion Modal State
-  showCompleteModal = false;
+  // Master-Detail Workspace State (NO MODALS)
+  selectedTask: any = null;
   selectedTaskId = '';
   selectedTaskName = '';
   submitting = false;
-  
+
   // Native Camunda Form State
   formInstance: any = null;
   loadingForm = false;
   hasFormSchema = true;
+
+  // In-app Notification Feedback
+  feedbackMessage: string | null = null;
+  feedbackType: 'success' | 'error' | 'info' = 'info';
 
   constructor(private http: HttpClient, public authService: AuthService) {}
 
   ngOnInit(): void {
     this.loadMyTasks();
     this.loadUsers();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyFormInstance();
+  }
+
+  showFeedback(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
+    this.feedbackMessage = message;
+    this.feedbackType = type;
+    setTimeout(() => {
+      if (this.feedbackMessage === message) {
+        this.feedbackMessage = null;
+      }
+    }, 4000);
   }
 
   loadMyTasks(): void {
@@ -44,10 +63,19 @@ export class MyTasksComponent implements OnInit {
         next: (data) => {
           this.tasks = data || [];
           this.loading = false;
+
+          // If the currently selected task was finished or removed, deselect it
+          if (this.selectedTask && !this.tasks.some(t => t.id === this.selectedTask.id)) {
+            this.deselectTask();
+          } else if (this.selectedTask) {
+            // Update reference
+            this.selectedTask = this.tasks.find(t => t.id === this.selectedTask.id);
+          }
         },
         error: (err) => {
           console.error('Error fetching tasks:', err);
           this.loading = false;
+          this.showFeedback('Failed to load tasks from server', 'error');
         }
       });
   }
@@ -61,13 +89,25 @@ export class MyTasksComponent implements OnInit {
 
   get filteredTasks(): any[] {
     const currentUsername = this.authService.getCurrentUsername();
+    let list = this.tasks;
+
     if (this.activeFilter === 'DIRECT') {
-      return this.tasks.filter(t => t.assignee && (t.assignee === currentUsername || t.assignee === this.authService.getCurrentUserId()));
+      list = list.filter(t => t.assignee && (t.assignee === currentUsername || t.assignee === this.authService.getCurrentUserId()));
+    } else if (this.activeFilter === 'GROUP') {
+      list = list.filter(t => !t.assignee && t.candidateGroup);
     }
-    if (this.activeFilter === 'GROUP') {
-      return this.tasks.filter(t => !t.assignee && t.candidateGroup);
+
+    if (this.searchQuery && this.searchQuery.trim().length > 0) {
+      const q = this.searchQuery.trim().toLowerCase();
+      list = list.filter(t =>
+        (t.name && t.name.toLowerCase().includes(q)) ||
+        (t.taskDefinitionKey && t.taskDefinitionKey.toLowerCase().includes(q)) ||
+        (t.processInstanceId && t.processInstanceId.toLowerCase().includes(q)) ||
+        (t.id && t.id.toLowerCase().includes(q))
+      );
     }
-    return this.tasks;
+
+    return list;
   }
 
   get directTasksCount(): number {
@@ -95,9 +135,12 @@ export class MyTasksComponent implements OnInit {
       next: () => {
         task.assignee = currentUsername;
         task.assigneeName = currentUsername;
+        this.showFeedback(`Task claimed successfully: ${task.name || task.id}`, 'success');
         this.loadMyTasks();
       },
-      error: (err) => alert('Failed to claim task: ' + (err.error?.message || err.message))
+      error: (err) => {
+        this.showFeedback('Failed to claim task: ' + (err.error?.message || err.message), 'error');
+      }
     });
   }
 
@@ -107,16 +150,25 @@ export class MyTasksComponent implements OnInit {
 
     this.http.post(`http://localhost:8082/api/tasks/${task.id}/unclaim`, { groupId: groupId }).subscribe({
       next: () => {
+        this.showFeedback('Task released back to candidate group pool', 'info');
+        if (this.selectedTask?.id === task.id) {
+          this.deselectTask();
+        }
         this.loadMyTasks();
       },
-      error: (err) => alert('Failed to unclaim task: ' + (err.error?.message || err.message))
+      error: (err) => {
+        this.showFeedback('Failed to unclaim task: ' + (err.error?.message || err.message), 'error');
+      }
     });
   }
 
-  openCompleteModal(task: any): void {
+  selectTask(task: any): void {
+    if (this.selectedTask?.id === task.id) return;
+    this.destroyFormInstance();
+
+    this.selectedTask = task;
     this.selectedTaskId = task.id;
     this.selectedTaskName = task.name || task.taskDefinitionKey || task.id;
-    this.showCompleteModal = true;
     this.loadingForm = true;
     this.hasFormSchema = true;
     this.submitting = false;
@@ -128,9 +180,9 @@ export class MyTasksComponent implements OnInit {
           next: (vars) => {
             const initialData: any = {};
             Object.keys(vars || {}).forEach(k => initialData[k] = vars[k].value);
-            setTimeout(() => this.renderNativeForm(schema, initialData), 100);
+            setTimeout(() => this.renderNativeForm(schema, initialData), 80);
           },
-          error: () => setTimeout(() => this.renderNativeForm(schema, {}), 100)
+          error: () => setTimeout(() => this.renderNativeForm(schema, {}), 80)
         });
       },
       error: () => {
@@ -140,15 +192,31 @@ export class MyTasksComponent implements OnInit {
     });
   }
 
+  deselectTask(): void {
+    this.destroyFormInstance();
+    this.selectedTask = null;
+    this.selectedTaskId = '';
+    this.selectedTaskName = '';
+  }
+
+  private destroyFormInstance(): void {
+    if (this.formInstance) {
+      try {
+        this.formInstance.destroy();
+      } catch (e) {
+        console.warn('Error destroying form instance:', e);
+      }
+      this.formInstance = null;
+    }
+  }
+
   async renderNativeForm(schema: any, data: any): Promise<void> {
     const container = document.querySelector('#camunda-form-container');
     if (!container) return;
     container.innerHTML = '';
 
     try {
-      if (this.formInstance) {
-        this.formInstance.destroy();
-      }
+      this.destroyFormInstance();
       this.formInstance = new Form({ container: container });
       let parsedSchema = schema;
       if (typeof schema === 'string') {
@@ -157,10 +225,10 @@ export class MyTasksComponent implements OnInit {
       await this.formInstance.importSchema(parsedSchema, data);
       this.loadingForm = false;
 
-      // Hook up the form's OWN submit button inside the bpmn.io form viewer
+      // Listen for form internal submit if form has its own button
       this.formInstance.on('submit', (event: any) => {
         if (event.errors && Object.keys(event.errors).length > 0) {
-          return; // Form-JS handles inline error validation display
+          return;
         }
         this.submitTaskDirectly(event.data);
       });
@@ -168,6 +236,28 @@ export class MyTasksComponent implements OnInit {
       console.error('Failed to render form-js:', err);
       this.loadingForm = false;
       this.hasFormSchema = false;
+    }
+  }
+
+  triggerFormSubmit(): void {
+    if (this.submitting) return;
+
+    if (!this.hasFormSchema || !this.formInstance) {
+      this.submitFallbackWithoutForm();
+      return;
+    }
+
+    try {
+      const result = this.formInstance.submit();
+      if (result && result.errors && Object.keys(result.errors).length > 0) {
+        this.showFeedback('Please resolve required form validation errors before completing.', 'error');
+        return;
+      }
+      if (result && result.data) {
+        this.submitTaskDirectly(result.data);
+      }
+    } catch (e) {
+      console.error('Error triggering form submit:', e);
     }
   }
 
@@ -187,13 +277,13 @@ export class MyTasksComponent implements OnInit {
       .subscribe({
         next: () => {
           this.submitting = false;
-          this.closeCompleteModal();
-          alert('Task submitted and completed successfully!');
+          this.showFeedback(`Task '${this.selectedTaskName}' completed successfully!`, 'success');
+          this.deselectTask();
           this.loadMyTasks();
         },
         error: (err) => {
           this.submitting = false;
-          alert('Failed to submit task: ' + (err.error?.message || err.error?.error || 'Server error'));
+          this.showFeedback('Failed to submit task: ' + (err.error?.message || err.error?.error || 'Server error'), 'error');
         }
       });
   }
@@ -204,22 +294,14 @@ export class MyTasksComponent implements OnInit {
       .subscribe({
         next: () => {
           this.submitting = false;
-          this.closeCompleteModal();
-          alert('Task completed successfully!');
+          this.showFeedback(`Task '${this.selectedTaskName}' completed successfully!`, 'success');
+          this.deselectTask();
           this.loadMyTasks();
         },
         error: (err) => {
           this.submitting = false;
-          alert('Failed to complete task: ' + (err.error?.message || err.error?.error || 'Server error'));
+          this.showFeedback('Failed to complete task: ' + (err.error?.message || err.error?.error || 'Server error'), 'error');
         }
       });
-  }
-
-  closeCompleteModal(): void {
-    this.showCompleteModal = false;
-    if (this.formInstance) {
-      this.formInstance.destroy();
-      this.formInstance = null;
-    }
   }
 }

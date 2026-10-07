@@ -4,12 +4,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
-// PrimeNG UI Modules
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
-
 export interface UserItem {
   id: string;
   username: string;
@@ -24,7 +18,7 @@ export interface UserItem {
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TableModule, ButtonModule, DialogModule, TagModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './user-list.component.html',
   styleUrls: ['./user-list.component.css']
 })
@@ -35,9 +29,14 @@ export class UserListComponent implements OnInit {
   loading = false;
   errorMessage = '';
   successMessage = '';
+  searchQuery = '';
 
-  // Create User Modal State
-  showCreateDialog = false;
+  // Slide-over Drawer State (Zero Popups)
+  showDrawer = false;
+  drawerMode: 'CREATE' | 'EDIT' = 'CREATE';
+  drawerSubmitting = false;
+
+  // Form Data for Create
   newUser = {
     username: '',
     fullName: '',
@@ -47,8 +46,7 @@ export class UserListComponent implements OnInit {
     active: true
   };
 
-  // Edit User Modal State
-  showEditDialog = false;
+  // Form Data for Edit
   editingUser: UserItem | null = null;
   editFormData = {
     fullName: '',
@@ -69,18 +67,32 @@ export class UserListComponent implements OnInit {
     this.errorMessage = '';
     this.http.get<UserItem[]>(this.API_URL).subscribe({
       next: (data) => {
-        this.users = data;
+        this.users = data || [];
         this.loading = false;
       },
       error: (err) => {
         console.error('Error loading users:', err);
-        this.errorMessage = 'Failed to load users from MySQL database.';
+        this.errorMessage = 'Failed to load users from database.';
         this.loading = false;
       }
     });
   }
 
-  openCreateModal() {
+  get filteredUsers(): UserItem[] {
+    if (!this.searchQuery || this.searchQuery.trim().length === 0) {
+      return this.users;
+    }
+    const q = this.searchQuery.trim().toLowerCase();
+    return this.users.filter(u =>
+      (u.username && u.username.toLowerCase().includes(q)) ||
+      (u.fullName && u.fullName.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q)) ||
+      (u.id && u.id.toLowerCase().includes(q))
+    );
+  }
+
+  openCreateDrawer() {
+    this.drawerMode = 'CREATE';
     this.newUser = {
       username: '',
       fullName: '',
@@ -90,7 +102,28 @@ export class UserListComponent implements OnInit {
       active: true
     };
     this.errorMessage = '';
-    this.showCreateDialog = true;
+    this.showDrawer = true;
+  }
+
+  openEditDrawer(user: UserItem) {
+    this.drawerMode = 'EDIT';
+    this.editingUser = user;
+    const primaryRole = user.roles && user.roles.length > 0 ? user.roles[0] : 'ROLE_WORKER';
+    this.editFormData = {
+      fullName: user.fullName,
+      email: user.email,
+      password: '',
+      role: primaryRole,
+      active: user.active
+    };
+    this.errorMessage = '';
+    this.showDrawer = true;
+  }
+
+  closeDrawer() {
+    this.showDrawer = false;
+    this.editingUser = null;
+    this.errorMessage = '';
   }
 
   submitCreateUser() {
@@ -99,6 +132,7 @@ export class UserListComponent implements OnInit {
       return;
     }
 
+    this.drawerSubmitting = true;
     const payload = {
       username: this.newUser.username.trim(),
       fullName: this.newUser.fullName.trim(),
@@ -110,29 +144,17 @@ export class UserListComponent implements OnInit {
 
     this.http.post<UserItem>(this.API_URL, payload).subscribe({
       next: () => {
-        this.showCreateDialog = false;
-        this.setSuccess('User created successfully in MySQL database.');
+        this.drawerSubmitting = false;
+        this.closeDrawer();
+        this.setSuccess(`User '${payload.username}' created successfully.`);
         this.loadUsers();
       },
       error: (err) => {
+        this.drawerSubmitting = false;
         console.error('Error creating user:', err);
-        this.errorMessage = err.error?.message || err.error?.details?.password || 'Failed to create user. Please check requirements.';
+        this.errorMessage = err.error?.message || err.error?.details?.password || 'Failed to create user. Please check password requirements.';
       }
     });
-  }
-
-  openEditModal(user: UserItem) {
-    this.editingUser = user;
-    const primaryRole = user.roles && user.roles.length > 0 ? user.roles[0] : 'ROLE_WORKER';
-    this.editFormData = {
-      fullName: user.fullName,
-      email: user.email,
-      password: '',
-      role: primaryRole,
-      active: user.active
-    };
-    this.errorMessage = '';
-    this.showEditDialog = true;
   }
 
   submitEditUser() {
@@ -143,6 +165,7 @@ export class UserListComponent implements OnInit {
       return;
     }
 
+    this.drawerSubmitting = true;
     const payload: any = {
       fullName: this.editFormData.fullName.trim(),
       email: this.editFormData.email.trim(),
@@ -156,11 +179,13 @@ export class UserListComponent implements OnInit {
 
     this.http.put(`${this.API_URL}/${this.editingUser.id}`, payload).subscribe({
       next: () => {
-        this.showEditDialog = false;
+        this.drawerSubmitting = false;
+        this.closeDrawer();
         this.setSuccess(`User '${this.editingUser?.username}' updated successfully.`);
         this.loadUsers();
       },
       error: (err) => {
+        this.drawerSubmitting = false;
         console.error('Error updating user:', err);
         this.errorMessage = err.error?.message || 'Failed to update user.';
       }
@@ -179,14 +204,14 @@ export class UserListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error updating status:', err);
-          alert(`Failed to ${action} user.`);
+          this.errorMessage = `Failed to ${action} user.`;
         }
       });
     }
   }
 
   deleteUser(user: UserItem) {
-    if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete user '${user.username}' (${user.id}) from MySQL?`)) {
+    if (confirm(`CRITICAL WARNING:\nAre you sure you want to permanently delete user '${user.username}' (${user.id})?`)) {
       this.http.delete(`${this.API_URL}/${user.id}`).subscribe({
         next: () => {
           this.setSuccess(`User '${user.username}' deleted successfully.`);
@@ -194,7 +219,7 @@ export class UserListComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error deleting user:', err);
-          alert('Failed to delete user.');
+          this.errorMessage = 'Failed to delete user.';
         }
       });
     }

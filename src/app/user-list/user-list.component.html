@@ -1,191 +1,274 @@
-<div class="user-manager-container">
-  <!-- Header Card -->
-  <div class="header-bar">
-    <div>
-      <h2 class="title">User Management (Decoupled MySQL)</h2>
-      <p class="subtitle">Direct Role-Based Access Control and Identity Management (Table: app_users)</p>
-    </div>
-    <div class="header-actions">
-      <button pButton icon="pi pi-refresh" label="Refresh" class="p-button-outlined p-button-sm mr-2" (click)="loadUsers()"></button>
-      <button pButton icon="pi pi-user-plus" label="Create New User" class="p-button-sm p-button-primary" (click)="openCreateModal()"></button>
-    </div>
+<!-- HEADER CARD -->
+<div class="user-header-card">
+  <div>
+    <h2 class="user-page-title">
+      <i class="pi pi-user" style="color: var(--primary-blue);"></i> User Directory
+    </h2>
+    <p class="user-page-subtitle">
+      System authentication accounts, operational roles, and platform permissions
+    </p>
   </div>
 
-  <!-- Notification Banners -->
-  <div *ngIf="successMessage" class="alert alert-success">
-    <i class="pi pi-check-circle mr-2"></i> {{ successMessage }}
+  <div class="user-header-actions">
+    <!-- Search Box -->
+    <div class="user-search-box">
+      <i class="pi pi-search user-search-icon"></i>
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search by name, email, or username..." class="user-search-input" />
+    </div>
+
+    <!-- Refresh Button -->
+    <button (click)="loadUsers()" class="btn btn-secondary btn-sm" [disabled]="loading" title="Refresh Users">
+      <i class="pi pi-refresh" [class.pi-spin]="loading"></i> Refresh
+    </button>
+
+    <!-- Create Button -->
+    <button (click)="openCreateDrawer()" class="btn btn-primary btn-sm">
+      <i class="pi pi-user-plus"></i> Create New User
+    </button>
   </div>
-  <div *ngIf="errorMessage" class="alert alert-danger">
-    <i class="pi pi-exclamation-triangle mr-2"></i> {{ errorMessage }}
+</div>
+
+<!-- NOTIFICATION BANNERS -->
+<div *ngIf="successMessage" class="alert-banner alert-success">
+  <i class="pi pi-check-circle"></i>
+  <span>{{ successMessage }}</span>
+</div>
+<div *ngIf="errorMessage && !showDrawer" class="alert-banner alert-error">
+  <i class="pi pi-exclamation-triangle"></i>
+  <span>{{ errorMessage }}</span>
+</div>
+
+<!-- USERS ENTERPRISE TABLE CARD -->
+<div class="table-card">
+  
+  <!-- Skeleton Loader -->
+  <div *ngIf="loading" style="padding: 24px; display: flex; flex-direction: column; gap: 12px;">
+    <div class="skeleton-row" style="height: 40px;"></div>
+    <div class="skeleton-row" style="height: 40px;"></div>
+    <div class="skeleton-row" style="height: 40px;"></div>
   </div>
 
-  <!-- PrimeNG Users Table -->
-  <div class="table-card">
-    <p-table [value]="users" [loading]="loading" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm p-datatable-striped">
-      <ng-template pTemplate="header">
+  <!-- Table -->
+  <div *ngIf="!loading && filteredUsers.length > 0" class="table-scroll-container">
+    <table class="enterprise-table">
+      <thead>
         <tr>
-          <th>User</th>
+          <th class="pinned-left" style="width: 260px;">User Account</th>
           <th>Full Name</th>
-          <th>Email</th>
+          <th>Email Address</th>
           <th>RBAC Roles</th>
-          <th>Status</th>
-          <th style="text-align: right; width: 180px;">Actions</th>
+          <th>Account Status</th>
+          <th class="pinned-right" style="text-align: right; width: 180px;">Actions</th>
         </tr>
-      </ng-template>
-      <ng-template pTemplate="body" let-user>
-        <tr>
-          <td>
-            <div class="username-cell">
-              <span class="user-avatar"><i class="pi pi-user"></i></span>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <!-- Pinned Left: Avatar, Username, ID -->
+          <td class="pinned-left">
+            <div class="user-account-cell">
+              <div class="user-avatar-circle">
+                {{ (user.fullName || user.username || 'U').substring(0, 1).toUpperCase() }}
+              </div>
               <div>
-                <strong class="username-text">{{ user.username }}</strong>
-                <div class="uuid-text">{{ user.id }}</div>
+                <div class="user-username-text">{{ user.username }}</div>
+                <div class="user-id-text">{{ user.id }}</div>
               </div>
             </div>
           </td>
-          <td>{{ user.fullName }}</td>
-          <td>{{ user.email }}</td>
+
+          <!-- Full Name -->
+          <td style="font-weight: 500; color: var(--text-main);">
+            {{ user.fullName }}
+          </td>
+
+          <!-- Email -->
+          <td style="color: var(--text-muted); font-size: 13px;">
+            {{ user.email }}
+          </td>
+
+          <!-- RBAC Roles -->
           <td>
-            <span *ngFor="let role of user.roles" class="mr-1">
-              <p-tag *ngIf="role.includes('ADMIN')" value="ADMIN" severity="danger"></p-tag>
-              <p-tag *ngIf="!role.includes('ADMIN')" value="WORKER" severity="info"></p-tag>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <span *ngFor="let role of user.roles" class="badge" [ngClass]="role.includes('ADMIN') ? 'badge-danger' : 'badge-blue'">
+                <i class="pi" [ngClass]="role.includes('ADMIN') ? 'pi-shield' : 'pi-user'" style="font-size: 9px;"></i>
+                {{ role.replace('ROLE_', '') }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Status -->
+          <td>
+            <span class="badge" [ngClass]="user.active ? 'badge-success' : 'badge-neutral'">
+              <span class="status-dot" [class.active-dot]="user.active"></span>
+              {{ user.active ? 'ACTIVE' : 'DISABLED' }}
             </span>
           </td>
-          <td>
-            <p-tag [value]="user.active ? 'ACTIVE' : 'DISABLED'" [severity]="user.active ? 'success' : 'secondary'"></p-tag>
-          </td>
-          <td style="text-align: right;">
-            <div class="action-buttons">
-              <!-- Edit Modal Button -->
-              <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info" 
-                      title="Edit User" (click)="openEditModal(user)"></button>
-              
-              <!-- Toggle Active / Disabled Button -->
-              <button pButton [icon]="user.active ? 'pi pi-lock' : 'pi pi-lock-open'" 
-                      [class]="user.active ? 'p-button-text p-button-sm p-button-warning' : 'p-button-text p-button-sm p-button-success'"
-                      [title]="user.active ? 'Disable Account' : 'Enable Account'" 
-                      (click)="toggleUserStatus(user)"></button>
+
+          <!-- Pinned Right: Actions -->
+          <td class="pinned-right" style="text-align: right;">
+            <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+              <!-- Edit Drawer Button -->
+              <button (click)="openEditDrawer(user)" class="btn btn-secondary btn-sm" title="Edit User">
+                <i class="pi pi-pencil"></i> Edit
+              </button>
+
+              <!-- Enable / Disable Button -->
+              <button (click)="toggleUserStatus(user)" 
+                      class="btn btn-secondary btn-sm" 
+                      [title]="user.active ? 'Disable Account' : 'Enable Account'"
+                      [style.color]="user.active ? 'var(--warning-color)' : 'var(--success-color)'">
+                <i class="pi" [ngClass]="user.active ? 'pi-lock' : 'pi-lock-open'"></i>
+              </button>
 
               <!-- Delete Button -->
-              <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" 
-                      title="Delete User" (click)="deleteUser(user)"></button>
+              <button (click)="deleteUser(user)" class="btn btn-secondary btn-sm" style="color: var(--danger-color);" title="Delete User">
+                <i class="pi pi-trash"></i>
+              </button>
             </div>
           </td>
         </tr>
-      </ng-template>
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
-            <i class="pi pi-users" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-            No users found in MySQL app_users database.
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </tbody>
+    </table>
   </div>
 
-  <!-- Create User Modal Dialog -->
-  <p-dialog header="Create New Database User" [(visible)]="showCreateDialog" [modal]="true" [style]="{width: '520px'}" [closable]="true">
-    <div class="dialog-form">
-      <div *ngIf="errorMessage" class="alert alert-danger" style="margin-bottom: 15px;">
-        <i class="pi pi-exclamation-circle mr-2"></i> {{ errorMessage }}
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredUsers.length === 0" style="padding: 60px 24px; text-align: center; color: var(--text-muted);">
+    <i class="pi pi-users" style="font-size: 2.2rem; color: var(--text-light); margin-bottom: 12px; display: block;"></i>
+    <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">No Users Found</div>
+    <div style="font-size: 13px;">No accounts match your search criteria. Click "+ Create New User" to register an account.</div>
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- SLIDE-OVER USER DRAWER (CREATE & EDIT - NO POPUP MODALS)                  -->
+<!-- ========================================================================= -->
+<div *ngIf="showDrawer" class="drawer-backdrop" (click)="closeDrawer()">
+  <div class="drawer-panel" (click)="$event.stopPropagation()">
+    
+    <!-- Drawer Header -->
+    <div class="drawer-header">
+      <div>
+        <h3 class="drawer-title">
+          <i class="pi" [ngClass]="drawerMode === 'CREATE' ? 'pi-user-plus' : 'pi-user-edit'" style="color: var(--primary-blue);"></i>
+          <span>{{ drawerMode === 'CREATE' ? 'Create New User' : 'Edit User Profile' }}</span>
+        </h3>
+        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
+          {{ drawerMode === 'CREATE' ? 'Register new authentication credentials' : 'User: @' + editingUser?.username }}
+        </p>
+      </div>
+      <button (click)="closeDrawer()" class="btn btn-secondary btn-sm" style="padding: 4px 8px;">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Body -->
+    <div class="drawer-body">
+      
+      <!-- Drawer Error Alert -->
+      <div *ngIf="errorMessage" class="alert-banner alert-error" style="margin-bottom: 16px;">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ errorMessage }}</span>
       </div>
 
-      <div class="form-group">
-        <label for="createUsername">Username *</label>
-        <input id="createUsername" type="text" class="form-control" [(ngModel)]="newUser.username" placeholder="e.g. john_doe" />
-      </div>
+      <!-- CREATE FORM -->
+      <div *ngIf="drawerMode === 'CREATE'" style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <div class="form-group">
+          <label class="form-label">Username *</label>
+          <input type="text" [(ngModel)]="newUser.username" placeholder="e.g. john_doe" class="form-input" />
+        </div>
 
-      <div class="form-group">
-        <label for="createFullName">Full Name *</label>
-        <input id="createFullName" type="text" class="form-control" [(ngModel)]="newUser.fullName" placeholder="e.g. John Doe" />
-      </div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" [(ngModel)]="newUser.fullName" placeholder="e.g. John Doe" class="form-input" />
+        </div>
 
-      <div class="form-group">
-        <label for="createEmail">Email Address *</label>
-        <input id="createEmail" type="email" class="form-control" [(ngModel)]="newUser.email" placeholder="e.g. john@company.com" />
-      </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" [(ngModel)]="newUser.email" placeholder="e.g. john@company.com" class="form-input" />
+        </div>
 
-      <div class="form-group">
-        <label for="createPassword">Password *</label>
-        <input id="createPassword" type="password" class="form-control" [(ngModel)]="newUser.password" placeholder="Min 8 chars with upper, number & special char" />
-        <small class="hint-text">Must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number, and 1 special character (@#$%^&+=!_).</small>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group" style="flex: 1; margin-right: 10px;">
-          <label for="createRole">Assigned Role *</label>
-          <select id="createRole" class="form-control" [(ngModel)]="newUser.role">
+        <div class="form-group">
+          <label class="form-label">Assigned Role *</label>
+          <select [(ngModel)]="newUser.role" class="form-select">
             <option value="ROLE_WORKER">Standard Worker (ROLE_WORKER)</option>
             <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
           </select>
         </div>
 
-        <div class="form-group" style="flex: 1;">
-          <label for="createStatus">Account Status</label>
-          <select id="createStatus" class="form-control" [(ngModel)]="newUser.active">
-            <option [ngValue]="true">Active</option>
-            <option [ngValue]="false">Disabled</option>
-          </select>
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input type="password" [(ngModel)]="newUser.password" placeholder="Min 8 chars, 1 upper, 1 number, 1 symbol" class="form-input" />
+          <span class="form-hint">At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special character (@#$%^&+=!_).</span>
         </div>
+
       </div>
+
+      <!-- EDIT FORM -->
+      <div *ngIf="drawerMode === 'EDIT'" style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <div class="form-group">
+          <label class="form-label">Username (Read-only)</label>
+          <input type="text" [value]="editingUser?.username" disabled class="form-input" style="background: #F8FAFC; color: var(--text-muted); cursor: not-allowed;" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" [(ngModel)]="editFormData.fullName" class="form-input" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" [(ngModel)]="editFormData.email" class="form-input" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Assigned Role *</label>
+            <select [(ngModel)]="editFormData.role" class="form-select">
+              <option value="ROLE_WORKER">Standard Worker</option>
+              <option value="ROLE_ADMIN">Administrator</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Account Status</label>
+            <select [(ngModel)]="editFormData.active" class="form-select">
+              <option [ngValue]="true">Active</option>
+              <option [ngValue]="false">Disabled</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--border-color);">
+          <label class="form-label">New Password (Optional)</label>
+          <input type="password" [(ngModel)]="editFormData.password" placeholder="Leave blank to keep unchanged" class="form-input" />
+          <span class="form-hint">Only specify if resetting the user's password.</span>
+        </div>
+
+      </div>
+
     </div>
 
-    <ng-template pTemplate="footer">
-      <button pButton label="Cancel" class="p-button-text p-button-secondary" (click)="showCreateDialog = false"></button>
-      <button pButton icon="pi pi-check" label="Save to MySQL" class="p-button-primary" (click)="submitCreateUser()"></button>
-    </ng-template>
-  </p-dialog>
+    <!-- Drawer Footer -->
+    <div class="drawer-footer">
+      <button (click)="closeDrawer()" class="btn btn-secondary">
+        Cancel
+      </button>
 
-  <!-- Edit User Modal Dialog -->
-  <p-dialog [header]="'Edit User: ' + (editingUser?.username || '')" [(visible)]="showEditDialog" [modal]="true" [style]="{width: '520px'}" [closable]="true">
-    <div class="dialog-form" *ngIf="editingUser">
-      <div *ngIf="errorMessage" class="alert alert-danger" style="margin-bottom: 15px;">
-        <i class="pi pi-exclamation-circle mr-2"></i> {{ errorMessage }}
-      </div>
+      <button *ngIf="drawerMode === 'CREATE'" (click)="submitCreateUser()" class="btn btn-primary" [disabled]="drawerSubmitting">
+        <i class="pi pi-check" *ngIf="!drawerSubmitting"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="drawerSubmitting"></i>
+        <span>{{ drawerSubmitting ? 'Creating...' : 'Create User' }}</span>
+      </button>
 
-      <div class="form-group">
-        <label>User UUID</label>
-        <input type="text" class="form-control" [value]="editingUser.id" disabled style="background-color: #f1f5f9; cursor: not-allowed;" />
-      </div>
-
-      <div class="form-group">
-        <label for="editFullName">Full Name *</label>
-        <input id="editFullName" type="text" class="form-control" [(ngModel)]="editFormData.fullName" />
-      </div>
-
-      <div class="form-group">
-        <label for="editEmail">Email Address *</label>
-        <input id="editEmail" type="email" class="form-control" [(ngModel)]="editFormData.email" />
-      </div>
-
-      <div class="form-group">
-        <label for="editPassword">New Password (leave blank to keep current)</label>
-        <input id="editPassword" type="password" class="form-control" [(ngModel)]="editFormData.password" placeholder="Optional new password" />
-      </div>
-
-      <div class="form-row">
-        <div class="form-group" style="flex: 1; margin-right: 10px;">
-          <label for="editRole">Assigned Role</label>
-          <select id="editRole" class="form-control" [(ngModel)]="editFormData.role">
-            <option value="ROLE_WORKER">Standard Worker (ROLE_WORKER)</option>
-            <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
-          </select>
-        </div>
-
-        <div class="form-group" style="flex: 1;">
-          <label for="editStatus">Account Status</label>
-          <select id="editStatus" class="form-control" [(ngModel)]="editFormData.active">
-            <option [ngValue]="true">Active</option>
-            <option [ngValue]="false">Disabled</option>
-          </select>
-        </div>
-      </div>
+      <button *ngIf="drawerMode === 'EDIT'" (click)="submitEditUser()" class="btn btn-primary" [disabled]="drawerSubmitting">
+        <i class="pi pi-check" *ngIf="!drawerSubmitting"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="drawerSubmitting"></i>
+        <span>{{ drawerSubmitting ? 'Saving...' : 'Save Changes' }}</span>
+      </button>
     </div>
 
-    <ng-template pTemplate="footer">
-      <button pButton label="Cancel" class="p-button-text p-button-secondary" (click)="showEditDialog = false"></button>
-      <button pButton icon="pi pi-check" label="Update User" class="p-button-primary" (click)="submitEditUser()"></button>
-    </ng-template>
-  </p-dialog>
+  </div>
 </div>

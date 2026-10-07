@@ -1,20 +1,54 @@
-<div style="display: flex; justify-content: space-between; align-items: center;">
-  <h2>Group Management</h2>
-  <a routerLink="/admin/groups/create" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">+ Create New Group</a>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h2 style="color: var(--text-main); font-size: 20px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+      <i class="pi pi-users" style="color: var(--primary-blue);"></i> Group Management
+    </h2>
+    <p style="color: var(--text-muted); font-size: 13px; margin: 4px 0 0 0;">
+      Define user roles, candidate task assignment pools, and organizational groups
+    </p>
+  </div>
+  <a routerLink="/admin/groups/create" class="btn btn-primary btn-sm">
+    <i class="pi pi-plus"></i> Create New Group
+  </a>
 </div>
 
-<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-  <tr style="background-color: #f8f9fa;">
-    <th>Group ID</th>
-    <th>Group Name</th>
-    <th>Group Type</th>
-    <th>Action</th> </tr>
-  <tr *ngFor="let group of groups">
-    <td style="font-weight: bold;">{{ group.id }}</td>
-    <td>{{ group.name }}</td>
-    <td><span style="background: #e9ecef; padding: 3px 8px; border-radius: 4px; font-size: 14px;">{{ group.type }}</span></td>
-    <td>
-      <a [routerLink]="['/admin/groups/edit', group.id]" style="padding: 5px 10px; background-color: #ffc107; color: black; text-decoration: none; border-radius: 4px;">Edit</a>
-    </td>
-  </tr>
-</table>
+<div class="table-card">
+  <div class="table-scroll-container">
+    <table class="enterprise-table">
+      <thead>
+        <tr>
+          <th class="pinned-left" style="width: 220px;">Group ID</th>
+          <th>Group Name</th>
+          <th>Group Type</th>
+          <th class="pinned-right" style="text-align: right; width: 120px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let group of groups">
+          <td class="pinned-left">
+            <span class="id-badge" style="font-weight: 600; color: var(--primary-blue);">{{ group.id }}</span>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--text-main);">{{ group.name }}</div>
+          </td>
+          <td>
+            <span class="badge badge-neutral">
+              {{ group.type || 'WORKFLOW' }}
+            </span>
+          </td>
+          <td class="pinned-right" style="text-align: right;">
+            <a [routerLink]="['/admin/groups/edit', group.id]" class="btn btn-secondary btn-sm">
+              <i class="pi pi-pencil"></i> Edit
+            </a>
+          </td>
+        </tr>
+        <tr *ngIf="groups.length === 0">
+          <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px 16px;">
+            <i class="pi pi-users" style="font-size: 2rem; color: var(--text-light); margin-bottom: 8px; display: block;"></i>
+            <div>No groups configured. Click "+ Create New Group" to get started.</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

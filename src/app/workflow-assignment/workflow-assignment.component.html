@@ -1,336 +1,368 @@
-<!-- =====================================================================
-     WORKFLOW ASSIGNMENT ENGINE — MAIN UI
-     ===================================================================== -->
+<!-- TOAST NOTIFICATION -->
+<div *ngIf="toast" class="wae-toast" [class.toast-success]="toast.type === 'success'" [class.toast-error]="toast.type === 'error'">
+  <i class="pi" [ngClass]="toast.type === 'success' ? 'pi-check-circle' : 'pi-exclamation-circle'"></i>
+  <span>{{ toast.msg }}</span>
+</div>
 
+<!-- ========================================================================= -->
+<!-- UNIFIED WORKFLOW ASSIGNMENT WORKSPACE                                      -->
+<!-- ========================================================================= -->
 <div class="wae-shell">
 
-  <!-- ── TOAST NOTIFICATION ── -->
-  <div *ngIf="toast" class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
-    <span class="toast-icon">{{ toast.type === 'success' ? '✓' : '⚠' }}</span>
-    {{ toast.msg }}
-  </div>
-
-  <!-- ── PAGE HEADER ── -->
-  <div class="page-header">
-    <div class="header-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    </div>
-    <div>
-      <h1 class="page-title">Workflow Assignment Engine</h1>
-      <p class="page-subtitle">Assign users & groups to workflows and configure automatic task routing</p>
-    </div>
-  </div>
-
-  <!-- ── TAB BAR ── -->
-  <div class="tab-bar">
-    <button class="tab-btn" [class.tab-active]="activeTab === 'authorizations'" (click)="activeTab = 'authorizations'">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      Workflow Authorizations (Users & Groups)
-    </button>
-    <button class="tab-btn" [class.tab-active]="activeTab === 'routing'" (click)="activeTab = 'routing'">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-      Task Routing Rules
-    </button>
-  </div>
-
-  <!-- =================================================================
-       TAB 1: WORKFLOW AUTHORIZATIONS (ASSIGN GROUPS & USERS)
-       ================================================================= -->
-  <div *ngIf="activeTab === 'authorizations'" class="panel">
-    <div class="panel-header">
-      <div>
-        <h2 class="panel-title">Workflow Access & Assignment</h2>
-        <p class="panel-desc">Select a workflow to assign authorized users and groups from the system.</p>
-      </div>
+  <!-- TOP WORKFLOW SELECTOR & CONTEXT HEADER -->
+  <div class="wae-header-card">
+    <div class="wae-header-title-block">
+      <h2 class="wae-page-title">
+        <i class="pi pi-sliders-h" style="color: var(--primary-blue);"></i> Assignment Engine
+      </h2>
+      <p class="wae-page-subtitle">
+        Unified workflow access permissions and automated BPMN task routing matrix
+      </p>
     </div>
 
-    <!-- Workflow selector -->
-    <div class="form-row">
-      <label class="form-label">Select Workflow</label>
-      <select class="form-select" [(ngModel)]="selectedAuthWorkflow" (ngModelChange)="onAuthWorkflowChange()">
-        <option [ngValue]="null">— Choose a workflow —</option>
-        <option *ngFor="let wf of workflows" [ngValue]="wf">{{ wf.name || wf.key || wf.id }}</option>
+    <!-- WORKFLOW SELECTOR -->
+    <div class="wae-workflow-selector-block">
+      <label class="selector-label">Target Workflow:</label>
+      <select class="selector-dropdown" [(ngModel)]="selectedWorkflow" (ngModelChange)="onWorkflowSelect($event)">
+        <option [ngValue]="null" disabled>-- Choose a Workflow --</option>
+        <option *ngFor="let wf of workflows" [ngValue]="wf">
+          {{ wf.name || wf.key }} (v{{ wf.version }})
+        </option>
       </select>
     </div>
+  </div>
 
-    <!-- Auth list -->
-    <div *ngIf="selectedAuthWorkflow" class="auth-section">
-      <div class="auth-actions">
-        <span class="auth-count">{{ workflowAuthorizations.length }} assigned entity(ies)</span>
-        <div style="display: flex; gap: 10px;">
-          <button class="btn-primary btn-sm" (click)="openAddUserModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="12" y1="13" x2="12" y2="23"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
-            Assign User
+  <!-- SKELETON LOADER -->
+  <div *ngIf="!selectedWorkflow" class="empty-workflow-card">
+    <i class="pi pi-sitemap" style="font-size: 2.5rem; color: var(--text-light); margin-bottom: 12px; display: block;"></i>
+    <h3 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 16px; font-weight: 700;">Select a Workflow to Begin</h3>
+    <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Choose any deployed process definition from the dropdown above to manage authorizations and task routing.</p>
+  </div>
+
+  <!-- UNIFIED 2-COLUMN MATRIX WORKSPACE -->
+  <div *ngIf="selectedWorkflow" class="wae-matrix-grid">
+
+    <!-- ===================================================================== -->
+    <!-- COLUMN 1: WORKFLOW ACCESS & PERMISSIONS (WHO CAN ACCESS/START)         -->
+    <!-- ===================================================================== -->
+    <div class="table-card wae-section-card">
+      
+      <!-- Section Header -->
+      <div class="section-card-header">
+        <div>
+          <h3 class="section-card-title">
+            <i class="pi pi-shield" style="color: var(--primary-blue);"></i> Workflow Access Control
+          </h3>
+          <p class="section-card-subtitle">
+            Users & groups authorized to access and initiate this process
+          </p>
+        </div>
+        <span class="badge badge-blue">
+          {{ workflowAuthorizations.length }} Authorized
+        </span>
+      </div>
+
+      <!-- Fast Inline Grant Bar (No Popup Modals) -->
+      <div class="inline-grant-bar">
+        <div class="grant-type-toggle">
+          <button type="button" 
+                  class="toggle-type-btn" 
+                  [class.active]="addEntityType === 'USER'"
+                  (click)="addEntityType = 'USER'">
+            <i class="pi pi-user"></i> User
           </button>
-          <button class="btn-secondary btn-sm" (click)="openAddGroupModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Assign Group
+          <button type="button" 
+                  class="toggle-type-btn" 
+                  [class.active]="addEntityType === 'GROUP'"
+                  (click)="addEntityType = 'GROUP'">
+            <i class="pi pi-users"></i> Group
           </button>
         </div>
+
+        <!-- User Dropdown -->
+        <select *ngIf="addEntityType === 'USER'" [(ngModel)]="selectedUserToAdd" class="grant-select">
+          <option [ngValue]="null">-- Select User to Grant Access --</option>
+          <option *ngFor="let u of getAvailableUsers()" [ngValue]="u">
+            {{ u.fullName || u.username }} ({{ u.username }})
+          </option>
+        </select>
+
+        <!-- Group Dropdown -->
+        <select *ngIf="addEntityType === 'GROUP'" [(ngModel)]="selectedGroupToAdd" class="grant-select">
+          <option [ngValue]="null">-- Select Group to Grant Access --</option>
+          <option *ngFor="let g of getAvailableGroups()" [ngValue]="g">
+            {{ g.name || g.id }} ({{ g.id }})
+          </option>
+        </select>
+
+        <button (click)="grantAccessInline()" 
+                class="btn btn-primary btn-sm"
+                [disabled]="grantingAccess || (addEntityType === 'USER' && !selectedUserToAdd) || (addEntityType === 'GROUP' && !selectedGroupToAdd)">
+          <i class="pi pi-plus"></i> Grant Access
+        </button>
       </div>
 
-      <div *ngIf="authLoading" class="loading-state">Loading assignments...</div>
-
-      <div *ngIf="!authLoading && workflowAuthorizations.length === 0" class="empty-state">
-        <div class="empty-icon">🔓</div>
-        <p>No users or groups assigned to this workflow yet.</p>
-        <p class="empty-hint">Click "Assign User" or "Assign Group" above to grant access.</p>
-      </div>
-
-      <div *ngIf="!authLoading && workflowAuthorizations.length > 0" class="auth-table-wrap">
-        <table class="data-table">
+      <!-- Authorizations Table -->
+      <div class="table-scroll-container" style="max-height: 480px;">
+        <table class="enterprise-table">
           <thead>
             <tr>
-              <th>Type</th>
+              <th style="width: 100px;">Entity</th>
               <th>Name</th>
               <th>Identifier</th>
-              <th>Assigned Date</th>
-              <th>Action</th>
+              <th style="text-align: right; width: 80px;">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let auth of workflowAuthorizations">
               <td>
-                <span class="type-badge" [class.type-user]="auth.type==='USER'" [class.type-group]="auth.type==='GROUP'">
-                  {{ auth.type === 'USER' ? '👤 User' : '👥 Group' }}
+                <span class="badge" [ngClass]="auth.type === 'USER' ? 'badge-blue' : 'badge-neutral'">
+                  <i class="pi" [ngClass]="auth.type === 'USER' ? 'pi-user' : 'pi-users'" style="font-size: 10px;"></i>
+                  {{ auth.type }}
                 </span>
               </td>
-              <td class="name-cell">
-                {{ auth.type === 'USER' ? (auth.fullName || auth.username) : (auth.groupName || auth.groupId) }}
-              </td>
-              <td class="id-cell">
-                {{ auth.type === 'USER' ? auth.username : auth.groupId }}
-              </td>
-              <td class="date-cell">{{ auth.createdAt | date:'mediumDate' }}</td>
               <td>
-                <button class="btn-danger btn-xs" (click)="revokeAuthorization(auth)" title="Revoke access">
-                  Remove
+                <span style="font-weight: 600; color: var(--text-main);">
+                  {{ getAuthDisplayName(auth) }}
+                </span>
+                <div *ngIf="getAuthDisplayFullName(auth)" style="font-size: 11px; color: var(--text-muted);">
+                  {{ getAuthDisplayFullName(auth) }}
+                </div>
+              </td>
+              <td>
+                <span class="id-badge" *ngIf="auth.type === 'USER'">&#64;{{ getAuthDisplayName(auth) }}</span>
+                <span class="id-badge" *ngIf="auth.type === 'GROUP'">{{ auth.groupId }}</span>
+              </td>
+              <td style="text-align: right;">
+                <button (click)="revokeAuthorization(auth)" class="btn btn-secondary btn-sm" style="color: var(--danger-color); padding: 4px 8px;" title="Revoke Authorization">
+                  <i class="pi pi-trash"></i>
                 </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="workflowAuthorizations.length === 0 && !authLoading">
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">
+                <i class="pi pi-lock-open" style="font-size: 1.8rem; color: var(--text-light); margin-bottom: 8px; display: block;"></i>
+                <div>No users or groups granted access to this workflow yet.</div>
+                <div style="font-size: 11px; margin-top: 4px;">Use the selector above to grant access.</div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+
     </div>
 
-    <div *ngIf="!selectedAuthWorkflow" class="no-selection-hint">
-      <div class="hint-icon">🎯</div>
-      <p>Select a workflow from the dropdown above to view and assign groups and users.</p>
-    </div>
-  </div>
-
-  <!-- =================================================================
-       TAB 2: TASK ROUTING RULES
-       ================================================================= -->
-  <div *ngIf="activeTab === 'routing'" class="panel">
-    <div class="panel-header">
-      <div>
-        <h2 class="panel-title">Task Routing Rules</h2>
-        <p class="panel-desc">Configure how each user task step in a workflow is automatically assigned by the engine.</p>
-      </div>
-    </div>
-
-    <!-- Strategy legend -->
-    <div class="strategy-legend">
-      <div class="legend-item"><span class="badge badge-star">★ Started user (Initiator)</span> Assigns to the user who started the workflow</div>
-      <div class="legend-item"><span class="badge badge-dynamic">⚡ Load Balance</span> Balances workload across authorized users</div>
-      <div class="legend-item"><span class="badge badge-user">👤 Specific User</span> Statically assigns to a specific person</div>
-      <div class="legend-item"><span class="badge badge-group">👥 Group Pool</span> Places task in group pool for claiming</div>
-    </div>
-
-    <!-- Workflow selector -->
-    <div class="form-row">
-      <label class="form-label">Select Workflow</label>
-      <select class="form-select" [(ngModel)]="selectedRoutingWorkflow" (ngModelChange)="onRoutingWorkflowChange()">
-        <option [ngValue]="null">— Choose a workflow —</option>
-        <option *ngFor="let wf of workflows" [ngValue]="wf">{{ wf.name || wf.key || wf.id }}</option>
-      </select>
-    </div>
-
-    <!-- Tasks list -->
-    <div *ngIf="selectedRoutingWorkflow">
-      <div *ngIf="tasksLoading" class="loading-state">Parsing BPMN tasks...</div>
-
-      <div *ngIf="!tasksLoading && workflowTasks.length === 0" class="empty-state">
-        <div class="empty-icon">📋</div>
-        <p>No UserTask elements found in this workflow.</p>
-        <p class="empty-hint">Ensure the BPMN definition has user tasks deployed to Camunda.</p>
-      </div>
-
-      <div *ngIf="!tasksLoading && workflowTasks.length > 0" class="tasks-grid">
-        <div *ngFor="let task of workflowTasks" class="task-card" (click)="openRuleModal(task)">
-          <div class="task-card-left">
-            <div class="task-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/>
-              </svg>
-            </div>
-            <div class="task-info">
-              <div class="task-name">{{ task.name }}</div>
-              <div class="task-id">Element ID: {{ task.id }}</div>
-            </div>
-          </div>
-          <div class="task-card-right">
-            <span *ngIf="taskRulesMap[task.id]" class="badge" [ngClass]="getRoutingBadgeClass(taskRulesMap[task.id].routingType)">
-              {{ getRoutingLabel(taskRulesMap[task.id].routingType) }}
-              <span *ngIf="taskRulesMap[task.id].routingType === 'SELECT_USER'">: {{ taskRulesMap[task.id].targetUserFullName || taskRulesMap[task.id].targetUsername }}</span>
-              <span *ngIf="taskRulesMap[task.id].routingType === 'SELECT_GROUP'">: {{ taskRulesMap[task.id].targetGroupName || taskRulesMap[task.id].targetGroupId }}</span>
-            </span>
-            <span *ngIf="!taskRulesMap[task.id]" class="badge badge-none">Unrouted</span>
-            <button class="btn-ghost btn-xs">Configure &rarr;</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="!selectedRoutingWorkflow" class="no-selection-hint">
-      <div class="hint-icon">⚙️</div>
-      <p>Select a workflow above to configure routing strategies for its tasks.</p>
-    </div>
-  </div>
-
-  <!-- =================================================================
-       MODAL: ASSIGN USER TO WORKFLOW
-       ================================================================= -->
-  <div *ngIf="showAddUserModal" class="modal-backdrop" (click)="showAddUserModal = false">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3 class="modal-title">Assign User to Workflow</h3>
-        <button class="modal-close" (click)="showAddUserModal = false">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-desc">
-          Select a user to authorize for <strong>{{ selectedAuthWorkflow?.name || selectedAuthWorkflow?.key }}</strong>.
-        </p>
-        <div class="form-row">
-          <label class="form-label">User</label>
-          <select class="form-select" [(ngModel)]="authUserToAdd">
-            <option [ngValue]="null">— Select an active user —</option>
-            <option *ngFor="let u of getAvailableUsers()" [ngValue]="u">
-              {{ u.fullName || u.username }} ({{ u.username }})
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-ghost" (click)="showAddUserModal = false">Cancel</button>
-        <button class="btn-primary" (click)="confirmAddUser()" [disabled]="!authUserToAdd">
-          Assign User
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================================================================
-       MODAL: ASSIGN GROUP TO WORKFLOW
-       ================================================================= -->
-  <div *ngIf="showAddGroupModal" class="modal-backdrop" (click)="showAddGroupModal = false">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3 class="modal-title">Assign Group to Workflow</h3>
-        <button class="modal-close" (click)="showAddGroupModal = false">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-desc">
-          Select a group from the Groups Pool to authorize for <strong>{{ selectedAuthWorkflow?.name || selectedAuthWorkflow?.key }}</strong>.
-        </p>
-        <div class="form-row">
-          <label class="form-label">Group</label>
-          <select class="form-select" [(ngModel)]="authGroupToAdd">
-            <option [ngValue]="null">— Select a group —</option>
-            <option *ngFor="let g of getAvailableGroups()" [ngValue]="g">
-              {{ g.name || g.id }} (ID: {{ g.id }})
-            </option>
-          </select>
-        </div>
-        <p *ngIf="groups.length === 0" style="color: #f59e0b; font-size: 12px; margin-top: 8px;">
-          No groups found. You can create groups in the <a routerLink="/admin/groups" style="color: #38bdf8;">Groups Pool</a>.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-ghost" (click)="showAddGroupModal = false">Cancel</button>
-        <button class="btn-primary" (click)="confirmAddGroup()" [disabled]="!authGroupToAdd">
-          Assign Group
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================================================================
-       MODAL: CONFIGURE TASK ROUTING RULE
-       ================================================================= -->
-  <div *ngIf="showRuleModal" class="modal-backdrop" (click)="showRuleModal = false">
-    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
-      <div class="modal-header">
+    <!-- ===================================================================== -->
+    <!-- COLUMN 2: TASK ACCESS CONTROL (HOW TASKS GET ASSIGNED)                 -->
+    <!-- ===================================================================== -->
+    <div class="table-card wae-section-card">
+      
+      <!-- Section Header -->
+      <div class="section-card-header">
         <div>
-          <h3 class="modal-title">Configure Routing: {{ editingTask?.name }}</h3>
-          <p class="modal-subtitle">Element ID: {{ editingTask?.id }}</p>
+          <h3 class="section-card-title">
+            <i class="pi pi-directions" style="color: var(--primary-blue);"></i> Task Access Control
+          </h3>
+          <p class="section-card-subtitle">
+            Automated assignment strategies for each BPMN user activity
+          </p>
         </div>
-        <button class="modal-close" (click)="showRuleModal = false">&times;</button>
+        <span class="badge badge-neutral">
+          {{ workflowTasks.length }} Tasks
+        </span>
       </div>
-      <div class="modal-body">
-        <label class="form-label">Select Assignment Strategy</label>
-        <div class="strategy-selector">
-          
-          <div class="strategy-card" [class.strategy-card-selected]="ruleType === 'STAR'" (click)="ruleType = 'STAR'">
-            <div class="strategy-icon">★</div>
-            <div class="strategy-name">Started user (Initiator)</div>
-            <div class="strategy-desc">Assigns task to whoever started the workflow</div>
-          </div>
 
-          <div class="strategy-card" [class.strategy-card-selected]="ruleType === 'DYNAMIC_USER'" (click)="ruleType = 'DYNAMIC_USER'">
-            <div class="strategy-icon">⚡</div>
-            <div class="strategy-name">Dynamic Load Balance</div>
-            <div class="strategy-desc">Assigns to authorized user with lowest active workload</div>
-          </div>
+      <!-- Task Access Control Table -->
+      <div class="table-scroll-container" style="max-height: 540px;">
+        <table class="enterprise-table" style="table-layout: auto;">
+          <thead>
+            <tr>
+              <th style="min-width: 120px;">User Task</th>
+              <th style="min-width: 130px;">Active Routing Rule</th>
+              <th style="min-width: 110px;">Assigned Target</th>
+              <th style="text-align: right; width: 95px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let task of workflowTasks">
+              <!-- Task Name & Key -->
+              <td>
+                <div style="font-weight: 600; color: var(--text-main); font-size: 13px;">
+                  {{ task.name || task.id }}
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+                  {{ task.id }}
+                </div>
+              </td>
 
-          <div class="strategy-card" [class.strategy-card-selected]="ruleType === 'SELECT_USER'" (click)="ruleType = 'SELECT_USER'">
-            <div class="strategy-icon">👤</div>
-            <div class="strategy-name">Specific User</div>
-            <div class="strategy-desc">Always assigns to one designated employee</div>
-          </div>
+              <!-- Active Routing Rule Badge -->
+              <td>
+                <span *ngIf="taskRulesMap[task.id]" class="badge" [ngClass]="getRoutingBadgeClass(taskRulesMap[task.id].routingType)">
+                  {{ getRoutingLabel(taskRulesMap[task.id].routingType) }}
+                </span>
+                <span *ngIf="!taskRulesMap[task.id]" class="badge badge-neutral" style="opacity: 0.7;">
+                  Unrouted (Default)
+                </span>
+              </td>
 
-          <div class="strategy-card" [class.strategy-card-selected]="ruleType === 'SELECT_GROUP'" (click)="ruleType = 'SELECT_GROUP'">
-            <div class="strategy-icon">👥</div>
-            <div class="strategy-name">Group Pool</div>
-            <div class="strategy-desc">Any member in the designated group can claim</div>
-          </div>
-        </div>
+              <!-- Assigned Target Details -->
+              <td>
+                <span *ngIf="taskRulesMap[task.id]?.targetUserId" style="font-weight: 600; color: var(--primary-blue); display: inline-flex; align-items: center; gap: 5px;">
+                  <i class="pi pi-user"></i> {{ getAssignedTargetUser(taskRulesMap[task.id]) }}
+                </span>
+                <span *ngIf="taskRulesMap[task.id]?.targetGroupId" style="font-weight: 600; color: #7C3AED; display: inline-flex; align-items: center; gap: 5px;">
+                  <i class="pi pi-users"></i> {{ getAssignedTargetGroup(taskRulesMap[task.id]) }}
+                </span>
+                <span *ngIf="!taskRulesMap[task.id]?.targetUserId && !taskRulesMap[task.id]?.targetGroupId" style="color: var(--text-muted); font-size: 12px;">
+                  —
+                </span>
+              </td>
 
-        <!-- Strategy Specific Options -->
-        <div *ngIf="ruleType === 'SELECT_USER'" class="form-row" style="margin-top: 20px;">
-          <label class="form-label">Target User</label>
-          <select class="form-select" [(ngModel)]="ruleTargetUser">
-            <option [ngValue]="null">— Select User —</option>
-            <option *ngFor="let u of users" [ngValue]="u">{{ u.fullName || u.username }} ({{ u.username }})</option>
-          </select>
-        </div>
+              <!-- Action: Configure Button -->
+              <td style="text-align: right;">
+                <button (click)="openRuleDrawer(task)" class="btn btn-outline-primary btn-sm" style="padding: 4px 8px; font-size: 11.5px; white-space: nowrap;">
+                  <i class="pi pi-sliders-h" style="font-size: 11px;"></i> Configure
+                </button>
+              </td>
+            </tr>
 
-        <div *ngIf="ruleType === 'SELECT_GROUP'" class="form-row" style="margin-top: 20px;">
-          <label class="form-label">Target Group</label>
-          <select class="form-select" [(ngModel)]="ruleTargetGroup">
-            <option [ngValue]="null">— Select Group —</option>
-            <option *ngFor="let g of groups" [ngValue]="g">{{ g.name || g.id }} (ID: {{ g.id }})</option>
-          </select>
-        </div>
-
+            <tr *ngIf="workflowTasks.length === 0 && !tasksLoading">
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">
+                <i class="pi pi-info-circle" style="font-size: 1.8rem; color: var(--text-light); margin-bottom: 8px; display: block;"></i>
+                <div>No user tasks defined in this BPMN process definition.</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div class="modal-footer">
-        <button *ngIf="taskRulesMap[editingTask?.id]" class="btn-danger" (click)="clearRule()">
-          Remove Rule
-        </button>
-        <div style="flex-grow: 1;"></div>
-        <button class="btn-ghost" (click)="showRuleModal = false">Cancel</button>
-        <button class="btn-primary" (click)="saveRule()" [disabled]="ruleSubmitting">
-          {{ ruleSubmitting ? 'Saving...' : 'Save Strategy' }}
-        </button>
-      </div>
+
     </div>
+
   </div>
 
+</div>
+
+<!-- ========================================================================= -->
+<!-- SLIDE-OVER CONFIGURATION DRAWER (NO POPUP MODALS)                         -->
+<!-- ========================================================================= -->
+<div *ngIf="showRuleDrawer" class="drawer-backdrop" (click)="closeRuleDrawer()">
+  <div class="drawer-panel" (click)="$event.stopPropagation()">
+    
+    <!-- Drawer Header -->
+    <div class="drawer-header">
+      <div>
+        <h3 class="drawer-title">
+          <i class="pi pi-directions" style="color: var(--primary-blue);"></i> Configure Task Access Control
+        </h3>
+        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
+          {{ editingTask?.name || editingTask?.id }}
+        </p>
+      </div>
+      <button (click)="closeRuleDrawer()" class="btn btn-secondary btn-sm" style="padding: 4px 8px;">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Body -->
+    <div class="drawer-body">
+      
+      <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+        Choose Assignment Strategy
+      </div>
+
+      <!-- STRATEGY SELECTOR CARDS -->
+      <div class="strategy-cards-grid">
+        
+        <!-- Strategy 1: Initiator -->
+        <div class="strategy-card" [class.selected]="ruleType === 'STAR'" (click)="ruleType = 'STAR'">
+          <div class="strategy-radio">
+            <span class="radio-inner" *ngIf="ruleType === 'STAR'"></span>
+          </div>
+          <div>
+            <div class="strategy-title">★ Started user (Initiator)</div>
+            <div class="strategy-desc">Automatically assigns task directly to the user who started this workflow instance.</div>
+          </div>
+        </div>
+
+        <!-- Strategy 2: Dynamic Load Balance -->
+        <div class="strategy-card" [class.selected]="ruleType === 'DYNAMIC_USER'" (click)="ruleType = 'DYNAMIC_USER'">
+          <div class="strategy-radio">
+            <span class="radio-inner" *ngIf="ruleType === 'DYNAMIC_USER'"></span>
+          </div>
+          <div>
+            <div class="strategy-title">⚡ Dynamic Load Balance</div>
+            <div class="strategy-desc">Distributes task to the least-busy authorized user with the fewest active tasks.</div>
+          </div>
+        </div>
+
+        <!-- Strategy 3: Specific User -->
+        <div class="strategy-card" [class.selected]="ruleType === 'SELECT_USER'" (click)="ruleType = 'SELECT_USER'">
+          <div class="strategy-radio">
+            <span class="radio-inner" *ngIf="ruleType === 'SELECT_USER'"></span>
+          </div>
+          <div>
+            <div class="strategy-title">👤 Specific User</div>
+            <div class="strategy-desc">Always routes task directly to a designated team member.</div>
+          </div>
+        </div>
+
+        <!-- Strategy 4: Candidate Group Pool -->
+        <div class="strategy-card" [class.selected]="ruleType === 'SELECT_GROUP'" (click)="ruleType = 'SELECT_GROUP'">
+          <div class="strategy-radio">
+            <span class="radio-inner" *ngIf="ruleType === 'SELECT_GROUP'"></span>
+          </div>
+          <div>
+            <div class="strategy-title">👥 Candidate Group Pool</div>
+            <div class="strategy-desc">Leaves task unassigned for any member in the candidate group to claim in "My Tasks".</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DYNAMIC STRATEGY TARGET SELECTORS -->
+      <div *ngIf="ruleType === 'SELECT_USER'" class="target-select-block">
+        <label class="target-label">Designated Worker *</label>
+        <select [(ngModel)]="ruleTargetUser" class="form-select">
+          <option [ngValue]="null" disabled>-- Choose User --</option>
+          <option *ngFor="let u of users" [ngValue]="u">
+            {{ u.fullName || u.username }} ({{ u.username }})
+          </option>
+        </select>
+      </div>
+
+      <div *ngIf="ruleType === 'SELECT_GROUP'" class="target-select-block">
+        <label class="target-label">Candidate Group Pool *</label>
+        <select [(ngModel)]="ruleTargetGroup" class="form-select">
+          <option [ngValue]="null" disabled>-- Choose Group --</option>
+          <option *ngFor="let g of groups" [ngValue]="g">
+            {{ g.name || g.id }} ({{ g.id }})
+          </option>
+        </select>
+      </div>
+
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="drawer-footer">
+      <button *ngIf="editingTask && taskRulesMap[editingTask.id]" 
+              (click)="clearRule()" 
+              class="btn btn-secondary btn-sm"
+              style="color: var(--danger-color); margin-right: auto;"
+              [disabled]="ruleSubmitting">
+        <i class="pi pi-trash"></i> Clear Rule
+      </button>
+
+      <button (click)="closeRuleDrawer()" class="btn btn-secondary btn-sm">
+        Cancel
+      </button>
+
+      <button (click)="saveRule()" class="btn btn-primary btn-sm" [disabled]="ruleSubmitting">
+        <i class="pi pi-check" *ngIf="!ruleSubmitting"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="ruleSubmitting"></i>
+        <span>{{ ruleSubmitting ? 'Saving...' : 'Save Rule' }}</span>
+      </button>
+    </div>
+
+  </div>
 </div>

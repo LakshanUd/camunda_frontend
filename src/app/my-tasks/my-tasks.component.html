@@ -1,236 +1,235 @@
-<div style="padding: 10px 0;">
-  <!-- PAGE HEADER -->
-  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-    <div>
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
-        <h2 style="color: #f8fafc; font-size: 24px; font-weight: 700; margin: 0;">My Work Inbox</h2>
-        <span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-          <i class="pi pi-user"></i> {{ authService.getCurrentUsername() }}
-        </span>
-      </div>
-      <p style="color: #94a3b8; font-size: 14px; margin: 0;">
-        Active tasks assigned directly to you or waiting in your candidate group pools.
-      </p>
-    </div>
-
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <button (click)="loadMyTasks()" style="background: #1e293b; color: #f59e0b; border: 1px solid #334155; padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
-        <i class="pi pi-refresh" [class.pi-spin]="loading"></i> Refresh Inbox
-      </button>
-    </div>
-  </div>
-
-  <!-- FILTER PILLS / SUMMARY STATS -->
-  <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-    <button (click)="activeFilter = 'ALL'"
-      [style.background]="activeFilter === 'ALL' ? '#3b82f6' : '#1e293b'"
-      [style.color]="activeFilter === 'ALL' ? '#ffffff' : '#94a3b8'"
-      [style.border]="activeFilter === 'ALL' ? '1px solid #3b82f6' : '1px solid #334155'"
-      style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;">
-      All Assigned to Me
-      <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 11px;">
-        {{ tasks.length }}
-      </span>
-    </button>
-
-    <button (click)="activeFilter = 'DIRECT'"
-      [style.background]="activeFilter === 'DIRECT' ? '#10b981' : '#1e293b'"
-      [style.color]="activeFilter === 'DIRECT' ? '#ffffff' : '#94a3b8'"
-      [style.border]="activeFilter === 'DIRECT' ? '1px solid #10b981' : '1px solid #334155'"
-      style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;">
-      <i class="pi pi-user-check"></i> Direct Assignee
-      <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 11px;">
-        {{ directTasksCount }}
-      </span>
-    </button>
-
-    <button (click)="activeFilter = 'GROUP'"
-      [style.background]="activeFilter === 'GROUP' ? '#a855f7' : '#1e293b'"
-      [style.color]="activeFilter === 'GROUP' ? '#ffffff' : '#94a3b8'"
-      [style.border]="activeFilter === 'GROUP' ? '1px solid #a855f7' : '1px solid #334155'"
-      style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;">
-      <i class="pi pi-users"></i> Group Pool Tasks
-      <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 11px;">
-        {{ groupTasksCount }}
-      </span>
-    </button>
-  </div>
-
-  <!-- TASKS TABLE CONTAINER -->
-  <div style="background: #1e293b; border-radius: 12px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-    
-    <!-- LOADING SPINNER -->
-    <div *ngIf="loading" style="padding: 50px 20px; text-align: center; color: #94a3b8;">
-      <i class="pi pi-spin pi-spinner" style="font-size: 2.2rem; color: #3b82f6; margin-bottom: 14px;"></i>
-      <div style="font-size: 15px; font-weight: 500;">Loading your tasks...</div>
-    </div>
-
-    <!-- TABLE -->
-    <table *ngIf="!loading && filteredTasks.length > 0" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; color: #f8fafc;">
-      <thead>
-        <tr style="background: #0f172a; border-bottom: 1px solid #334155; color: #94a3b8; text-transform: uppercase; font-size: 11px; letter-spacing: 0.8px;">
-          <th style="padding: 16px 20px;">Task Details</th>
-          <th style="padding: 16px 20px;">Process Instance</th>
-          <th style="padding: 16px 20px;">Assignment Status</th>
-          <th style="padding: 16px 20px;">Created Date</th>
-          <th style="padding: 16px 20px; text-align: right;">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let task of filteredTasks" style="border-bottom: 1px solid #334155; transition: background 0.15s;" onmouseover="this.style.background='#283548'" onmouseout="this.style.background='transparent'">
-          
-          <!-- TASK DETAILS -->
-          <td style="padding: 16px 20px;">
-            <div style="color: #f8fafc; font-weight: 600; font-size: 15px; margin-bottom: 4px;">
-              {{ task.name || task.taskDefinitionKey || 'User Task' }}
-            </div>
-            <div style="color: #64748b; font-size: 11px; font-family: monospace; display: flex; align-items: center; gap: 6px;">
-              <span style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155;">ID: {{ task.id }}</span>
-              <span *ngIf="task.taskDefinitionKey" style="color: #94a3b8;">Key: {{ task.taskDefinitionKey }}</span>
-            </div>
-          </td>
-
-          <!-- PROCESS INSTANCE -->
-          <td style="padding: 16px 20px;">
-            <span style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 12px; border: 1px solid rgba(56, 189, 248, 0.2);">
-              {{ task.processInstanceId }}
-            </span>
-          </td>
-
-          <!-- ASSIGNMENT STATUS -->
-          <td style="padding: 16px 20px;">
-            <!-- DIRECT ASSIGNEE (YOU) -->
-            <div *ngIf="isDirectlyAssigned(task)" style="display: inline-flex; flex-direction: column; gap: 4px;">
-              <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
-                <i class="pi pi-user-check"></i>
-                <span>Direct Assignee (You)</span>
-              </div>
-              <small *ngIf="task.candidateGroup" style="color: #c084fc; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
-                <i class="pi pi-users" style="font-size: 10px;"></i> Claimed from: {{ task.candidateGroupName || task.candidateGroup }}
-              </small>
-            </div>
-
-            <!-- CANDIDATE GROUP POOL -->
-            <div *ngIf="!isDirectlyAssigned(task) && task.candidateGroup" style="display: inline-flex; flex-direction: column; gap: 4px;">
-              <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(168, 85, 247, 0.3);">
-                <i class="pi pi-users"></i>
-                <span>Group Pool: {{ task.candidateGroupName || task.candidateGroup }}</span>
-              </div>
-              <small style="color: #94a3b8; font-size: 11px;">Available to any member of this group</small>
-            </div>
-
-            <!-- FALLBACK ASSIGNEE -->
-            <div *ngIf="!isDirectlyAssigned(task) && !task.candidateGroup && task.assignee" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
-              <i class="pi pi-user"></i>
-              <span>{{ task.assigneeName || task.assignee }}</span>
-            </div>
-          </td>
-
-          <!-- CREATED DATE -->
-          <td style="padding: 16px 20px; color: #94a3b8; font-size: 13px;">
-            <div>{{ task.created | date:'MMM d, y, h:mm a' }}</div>
-          </td>
-
-          <!-- ACTION BUTTONS: Do Task and Unclaim for assigned users -->
-          <td style="padding: 16px 20px; text-align: right;">
-            <div style="display: inline-flex; gap: 8px; justify-content: flex-end; align-items: center;">
-              <!-- Claim button for unassigned group pool tasks -->
-              <button *ngIf="!task.assignee && task.candidateGroup" 
-                (click)="claimTask(task, $event)"
-                title="Claim this task for yourself"
-                style="background: #3b82f6; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);">
-                <i class="pi pi-lock"></i> Claim Task
-              </button>
-
-              <!-- Do Task button: ONLY shows for the directly assigned user -->
-              <button *ngIf="isDirectlyAssigned(task)"
-                (click)="openCompleteModal(task)"
-                style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4); transition: all 0.2s;">
-                <i class="pi pi-pencil"></i> Do Task
-              </button>
-
-              <!-- Unclaim button: shows when task was claimed from a group pool -->
-              <button *ngIf="canUnclaim(task)"
-                (click)="unclaimTask(task, $event)"
-                title="Release this task back to the group pool"
-                style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
-                <i class="pi pi-undo"></i> Unclaim
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- EMPTY INBOX STATE -->
-    <div *ngIf="!loading && filteredTasks.length === 0" style="padding: 60px 20px; text-align: center; color: #94a3b8;">
-      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); color: #34d399; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px;">
-        <i class="pi pi-check-circle"></i>
-      </div>
-      <h3 style="color: #f8fafc; font-size: 18px; margin: 0 0 8px 0; font-weight: 600;">
-        {{ activeFilter === 'ALL' ? 'Your inbox is clear!' : 'No tasks match this filter' }}
-      </h3>
-      <p style="color: #64748b; font-size: 14px; max-width: 440px; margin: 0 auto;">
-        {{ activeFilter === 'ALL' 
-          ? 'You currently have no pending tasks assigned directly or in your candidate group pools.'
-          : 'Try switching filters or check back when new workflow processes are initiated.' }}
-      </p>
-    </div>
-
-  </div>
+<!-- FEEDBACK TOAST -->
+<div *ngIf="feedbackMessage" class="workspace-toast" [ngClass]="'toast-' + feedbackType">
+  <i class="pi" [ngClass]="feedbackType === 'success' ? 'pi-check-circle' : feedbackType === 'error' ? 'pi-exclamation-circle' : 'pi-info-circle'"></i>
+  <span>{{ feedbackMessage }}</span>
 </div>
 
 <!-- ========================================================================= -->
-<!-- SINGLE-STEP TASK COMPLETION MODAL (Using Form's Own Submit Button)        -->
+<!-- VIEW A: FULL-WINDOW TASK INBOX / QUEUE (100% CONTENT WIDTH)                -->
 <!-- ========================================================================= -->
-<div *ngIf="showCompleteModal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px;">
-  <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; width: 680px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+<div *ngIf="!selectedTask" class="tasks-inbox-view">
+  
+  <!-- INBOX HEADER -->
+  <div class="inbox-header-card">
+    <div class="inbox-title-block">
+      <h2 class="inbox-page-title">
+        <i class="pi pi-check-square" style="color: var(--primary-blue);"></i> My Tasks
+      </h2>
+      <p class="inbox-page-subtitle">
+        Active task assignments and candidate group queue awaiting your execution
+      </p>
+    </div>
+
+    <div class="inbox-actions-block">
+      <!-- Search Box -->
+      <div class="inbox-search-box">
+        <i class="pi pi-search inbox-search-icon"></i>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search tasks by name, key, or ID..." class="inbox-search-input" />
+      </div>
+
+      <!-- Refresh Button -->
+      <button (click)="loadMyTasks()" class="btn btn-secondary btn-sm" [disabled]="loading" title="Refresh Inbox">
+        <i class="pi pi-refresh" [class.pi-spin]="loading"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTER TABS -->
+  <div class="inbox-filter-bar">
+    <button (click)="activeFilter = 'ALL'" [class.active]="activeFilter === 'ALL'" class="filter-pill-btn">
+      <i class="pi pi-inbox"></i> All Tasks 
+      <span class="filter-badge-count">{{ tasks.length }}</span>
+    </button>
+    <button (click)="activeFilter = 'DIRECT'" [class.active]="activeFilter === 'DIRECT'" class="filter-pill-btn">
+      <i class="pi pi-user-check"></i> Directly Assigned 
+      <span class="filter-badge-count">{{ directTasksCount }}</span>
+    </button>
+    <button (click)="activeFilter = 'GROUP'" [class.active]="activeFilter === 'GROUP'" class="filter-pill-btn">
+      <i class="pi pi-users"></i> Candidate Pool 
+      <span class="filter-badge-count">{{ groupTasksCount }}</span>
+    </button>
+  </div>
+
+  <!-- TASKS TABLE CARD -->
+  <div class="table-card">
     
-    <!-- MODAL HEADER -->
-    <div style="background: #0f172a; padding: 18px 24px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <h3 style="margin: 0; color: #f8fafc; font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-          <i class="pi pi-check-square" style="color: #10b981;"></i> {{ selectedTaskName }}
-        </h3>
-        <span style="color: #64748b; font-size: 12px; font-family: monospace;">ID: {{ selectedTaskId }}</span>
-      </div>
-      <button (click)="closeCompleteModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer;">
-        <i class="pi pi-times"></i>
-      </button>
+    <!-- SKELETON LOADER -->
+    <div *ngIf="loading" style="padding: 24px; display: flex; flex-direction: column; gap: 12px;">
+      <div class="skeleton-row" style="height: 40px;"></div>
+      <div class="skeleton-row" style="height: 40px;"></div>
+      <div class="skeleton-row" style="height: 40px;"></div>
     </div>
 
-    <!-- MODAL BODY -->
-    <div style="padding: 24px; overflow-y: auto; flex: 1;">
-      
-      <!-- LOADING SPINNER -->
-      <div *ngIf="loadingForm" style="text-align: center; color: #94a3b8; padding: 40px 0;">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #3b82f6; margin-bottom: 12px;"></i>
-        <div>Loading native Camunda form...</div>
-      </div>
+    <!-- ENTERPRISE HIGH-DENSITY TABLE -->
+    <div *ngIf="!loading && filteredTasks.length > 0" class="table-scroll-container">
+      <table class="enterprise-table">
+        <thead>
+          <tr>
+            <th class="pinned-left" style="width: 280px;">Task Name</th>
+            <th>Task Key / ID</th>
+            <th>Process Instance</th>
+            <th>Assignment Status</th>
+            <th>Created Time</th>
+            <th class="pinned-right" style="text-align: right; width: 180px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let task of filteredTasks">
+            <!-- Pinned Left: Task Name -->
+            <td class="pinned-left">
+              <div style="font-weight: 600; color: var(--text-main); font-size: 13px;">
+                {{ task.name || task.taskDefinitionKey || 'Workflow Step' }}
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+                Task ID: {{ task.id }}
+              </div>
+            </td>
 
-      <!-- NO DEPLOYED FORM FALLBACK -->
-      <div *ngIf="!loadingForm && !hasFormSchema" style="background: #0f172a; border: 1px dashed #334155; border-radius: 8px; padding: 30px; text-align: center; color: #94a3b8;">
-        <i class="pi pi-info-circle" style="font-size: 2rem; color: #f59e0b; margin-bottom: 12px; display: block;"></i>
-        <h4 style="color: #f8fafc; margin: 0 0 8px 0;">No Custom Form Deployed</h4>
-        <p style="margin: 0 0 20px 0; font-size: 13px;">This task has no deployed JSON form schema. Click below to complete it directly.</p>
-        <button (click)="submitFallbackWithoutForm()" [disabled]="submitting" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);">
-          <i class="pi pi-check" style="margin-right: 6px;"></i> Complete Task
-        </button>
-      </div>
+            <!-- Definition Key -->
+            <td>
+              <code class="id-badge" style="color: var(--primary-blue);">{{ task.taskDefinitionKey || task.id }}</code>
+            </td>
 
-      <!-- BPMN.IO FORM VIEWER (Clean Original White Color) -->
-      <div [hidden]="loadingForm || !hasFormSchema" class="camunda-form-wrapper">
-        <div id="camunda-form-container"></div>
-      </div>
+            <!-- Process Instance -->
+            <td>
+              <code class="id-badge">{{ task.processInstanceId }}</code>
+            </td>
 
+            <!-- Assignment Status -->
+            <td>
+              <span *ngIf="isDirectlyAssigned(task)" class="badge badge-success">
+                <i class="pi pi-user-check"></i> Assigned to You
+              </span>
+              <span *ngIf="!task.assignee && task.candidateGroup" class="badge badge-warning">
+                <i class="pi pi-users"></i> {{ task.candidateGroupName || task.candidateGroup }}
+              </span>
+              <span *ngIf="task.assignee && !isDirectlyAssigned(task)" class="badge badge-neutral">
+                <i class="pi pi-user"></i> {{ task.assigneeName || task.assignee }}
+              </span>
+            </td>
+
+            <!-- Created Time -->
+            <td style="color: var(--text-muted); font-size: 12px;">
+              {{ task.created | date:'MMM d, y, h:mm a' }}
+            </td>
+
+            <!-- Pinned Right: Actions -->
+            <td class="pinned-right" style="text-align: right;">
+              <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                <!-- Unassigned Group Task: Claim Button -->
+                <button *ngIf="!task.assignee && task.candidateGroup" 
+                        (click)="claimTask(task, $event)" 
+                        class="btn btn-outline-primary btn-sm">
+                  <i class="pi pi-lock"></i> Claim
+                </button>
+
+                <!-- Directly Assigned: Open Full Form Button -->
+                <button *ngIf="isDirectlyAssigned(task)" 
+                        (click)="selectTask(task)" 
+                        class="btn btn-primary btn-sm">
+                  <i class="pi pi-pencil"></i> Open Form
+                </button>
+
+                <!-- Release Task to Pool -->
+                <button *ngIf="canUnclaim(task)" 
+                        (click)="unclaimTask(task, $event)" 
+                        class="btn btn-secondary btn-sm"
+                        style="color: var(--warning-color);"
+                        title="Release back to pool">
+                  <i class="pi pi-undo"></i> Release
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <!-- MODAL FOOTER -->
-    <div style="background: #0f172a; padding: 14px 24px; border-top: 1px solid #334155; display: flex; justify-content: flex-end; align-items: center;">
-      <button (click)="closeCompleteModal()" style="background: #334155; color: #f8fafc; border: 1px solid #475569; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">
-        Close Window
-      </button>
+    <!-- EMPTY STATE -->
+    <div *ngIf="!loading && filteredTasks.length === 0" style="padding: 60px 24px; text-align: center; color: var(--text-muted);">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: #DCFCE7; color: var(--success-color); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+        <i class="pi pi-check" style="font-size: 1.8rem;"></i>
+      </div>
+      <div style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">All Caught Up!</div>
+      <div style="font-size: 13px;">No pending tasks in this category. New assignments will appear here automatically.</div>
     </div>
 
   </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- VIEW B: FULL-WINDOW DEDICATED FORM WORKSPACE (100% CONTENT CANVAS)        -->
+<!-- ========================================================================= -->
+<div *ngIf="selectedTask" class="full-window-form-view">
+  
+  <!-- CONTEXT TOP BAR -->
+  <div class="form-context-header">
+    <div class="context-left">
+      <button (click)="deselectTask()" class="btn btn-secondary btn-sm" title="Return to Task Queue">
+        <i class="pi pi-arrow-left"></i> Back to My Tasks
+      </button>
+
+      <div class="context-title-group">
+        <h2 class="context-task-title">
+          <span>{{ selectedTask.name || selectedTask.taskDefinitionKey }}</span>
+        </h2>
+        <div class="context-meta-row">
+          <span class="id-badge">Task ID: {{ selectedTask.id }}</span>
+          <span class="id-badge">Instance: {{ selectedTask.processInstanceId }}</span>
+          <span *ngIf="selectedTask.assignee" class="badge badge-success">
+            <i class="pi pi-user"></i> {{ selectedTask.assigneeName || selectedTask.assignee }}
+          </span>
+          <span *ngIf="selectedTask.candidateGroup" class="badge badge-neutral">
+            <i class="pi pi-users"></i> {{ selectedTask.candidateGroupName || selectedTask.candidateGroup }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="context-right">
+      <button *ngIf="canUnclaim(selectedTask)" 
+              (click)="unclaimTask(selectedTask)" 
+              class="btn btn-outline-warning btn-sm"
+              [disabled]="submitting"
+              title="Release task back to group pool">
+        <i class="pi pi-undo"></i> Release to Pool
+      </button>
+      <button (click)="deselectTask()" class="btn btn-secondary btn-sm">
+        <i class="pi pi-times"></i> Close
+      </button>
+    </div>
+  </div>
+
+  <!-- FULL-WIDTH FORM SCROLL CANVAS -->
+  <div class="form-canvas-card">
+    
+    <!-- Loading State -->
+    <div *ngIf="loadingForm" class="form-loading-card">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2.2rem; color: var(--primary-blue); margin-bottom: 12px;"></i>
+      <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">Loading BPMN.io Form Schema...</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Fetching visual layout and instance variables</div>
+    </div>
+
+    <!-- No Visual Form Fallback -->
+    <div *ngIf="!loadingForm && !hasFormSchema" class="no-form-card">
+      <i class="pi pi-info-circle" style="font-size: 2.5rem; color: var(--warning-color); margin-bottom: 12px; display: block;"></i>
+      <h3 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 16px; font-weight: 700;">Standard Task Execution</h3>
+      <p style="margin: 0 0 16px 0; color: var(--text-muted); font-size: 13px; max-width: 500px; line-height: 1.5;">
+        This workflow activity has no custom visual form schema. You can complete this activity directly to advance the process instance.
+      </p>
+      <button (click)="submitFallbackWithoutForm()" class="btn btn-primary" [disabled]="submitting" style="padding: 8px 20px;">
+        <i class="pi pi-check" *ngIf="!submitting"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="submitting"></i>
+        <span>{{ submitting ? 'Completing...' : 'Complete Task' }}</span>
+      </button>
+    </div>
+
+    <!-- BPMN.IO FORM-JS VIEWER (100% Canvas Width) -->
+    <div [hidden]="loadingForm || !hasFormSchema" class="camunda-form-wrapper full-width-form-container">
+      <div id="camunda-form-container"></div>
+    </div>
+
+  </div>
+
 </div>

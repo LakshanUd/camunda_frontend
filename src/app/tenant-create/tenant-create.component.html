@@ -1,23 +1,53 @@
-<h2>Create New Tenant</h2>
-
-<div style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 500px; background: #fdfdfd;">
+<div style="max-width: 600px; margin: 0 auto;">
   
-  <div *ngIf="errorMessage" style="color: red; background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
-    {{ errorMessage }}
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div>
+      <h2 style="color: var(--text-main); font-size: 20px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i class="pi pi-building" style="color: var(--primary-blue);"></i> Create New Tenant
+      </h2>
+      <p style="color: var(--text-muted); font-size: 13px; margin: 4px 0 0 0;">
+        Establish an isolated tenant partition for users and workflows
+      </p>
+    </div>
+    <a routerLink="/admin/tenants" class="btn btn-secondary btn-sm">
+      <i class="pi pi-arrow-left"></i> Back to Tenants
+    </a>
   </div>
 
-  <div style="margin-bottom: 15px;">
-    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Tenant ID * <span style="font-weight: normal; color: gray; font-size: 12px;">(e.g., 'company-a')</span></label>
-    <input type="text" [(ngModel)]="tenantData.id" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+  <div class="table-card" style="padding: 24px;">
+    
+    <div *ngIf="errorMessage" style="color: var(--danger-color); background: var(--danger-light); border: 1px solid #FECACA; padding: 12px 16px; margin-bottom: 20px; border-radius: var(--radius-sm); font-size: 13px; display: flex; align-items: center; gap: 8px;">
+      <i class="pi pi-exclamation-circle"></i>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">
+          Tenant ID * <span style="font-weight: 400; color: var(--text-muted); font-size: 12px;">(Unique slug, e.g., 'company-a', 'north-region')</span>
+        </label>
+        <input type="text" [(ngModel)]="tenantData.id" placeholder="e.g. division_north" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 13px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">
+          Tenant Name * <span style="font-weight: 400; color: var(--text-muted); font-size: 12px;">(e.g., 'Division North Operations')</span>
+        </label>
+        <input type="text" [(ngModel)]="tenantData.name" placeholder="e.g. Division North Operations" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; box-sizing: border-box;" />
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--border-color);">
+        <a routerLink="/admin/tenants" class="btn btn-secondary">
+          Cancel
+        </a>
+        <button (click)="onCreateTenant()" class="btn btn-primary">
+          <i class="pi pi-check"></i> Save Tenant
+        </button>
+      </div>
+
+    </div>
+
   </div>
 
-  <div style="margin-bottom: 25px;">
-    <label style="font-weight: bold; display: block; margin-bottom: 5px;">Tenant Name * <span style="font-weight: normal; color: color: gray; font-size: 12px;">(e.g., 'Company A')</span></label>
-    <input type="text" [(ngModel)]="tenantData.name" style="width: 100%; padding: 8px; box-sizing: border-box;" />
-  </div>
-
-  <div style="display: flex; justify-content: space-between;">
-    <a routerLink="/admin/tenants" style="padding: 10px 20px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px;">Cancel</a>
-    <button (click)="onCreateTenant()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Save Tenant</button>
-  </div>
 </div>

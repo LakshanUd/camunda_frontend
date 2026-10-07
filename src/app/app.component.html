@@ -1,112 +1,127 @@
 <!-- LOGIN SCREEN (Displays if user is NOT logged in) -->
-<div *ngIf="!authService.isLoggedIn()" style="height: 100vh; display: flex; justify-content: center; align-items: center; background: #0f172a;">
-  <div style="background: #1e293b; padding: 40px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: center; max-width: 420px; width: 100%; border: 1px solid #334155;">
-    <i class="pi pi-box" style="font-size: 3rem; color: #38bdf8; margin-bottom: 15px;"></i>
-    <h2 style="margin: 0 0 20px 0; color: #f8fafc; font-weight: 700;">Camunda 7 Engine</h2>
+<div *ngIf="!authService.isLoggedIn()" class="login-shell">
+  <div class="login-card">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--primary-light); color: var(--primary-blue); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+      <i class="pi pi-box" style="font-size: 1.6rem;"></i>
+    </div>
+    <h2 style="margin: 0 0 6px 0; color: var(--text-main); font-size: 20px; font-weight: 700;">Camunda 7 Engine</h2>
+    <p style="margin: 0 0 24px 0; color: var(--text-muted); font-size: 13px;">Workflow Execution & Task Operations</p>
     <app-login></app-login>
   </div>
 </div>
 
 <!-- MAIN APPLICATION SHELL (Displays if user IS logged in) -->
-<div *ngIf="authService.isLoggedIn()" style="display: flex; height: 100vh; overflow: hidden; background-color: #090d16;">
+<div *ngIf="authService.isLoggedIn()" class="app-shell">
 
   <!-- LEFT SIDEBAR NAVIGATION -->
-  <div style="width: 270px; background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid #1e293b; z-index: 10;">
+  <aside class="sidebar">
     
     <!-- Sidebar Branding -->
-    <div style="padding: 22px 20px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 14px;">
-      <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);">
-        <i class="pi pi-sitemap" style="font-size: 1.4rem; color: #ffffff;"></i>
+    <div class="sidebar-branding">
+      <div class="branding-logo">
+        <i class="pi pi-sitemap" style="font-size: 1.1rem;"></i>
       </div>
       <div>
-        <div style="font-weight: 800; font-size: 16px; letter-spacing: 0.5px; color: #f8fafc;">CAMUNDA 7</div>
-        <div style="color: #38bdf8; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;">WORKFLOW ENGINE</div>
+        <div class="branding-title">CAMUNDA 7</div>
+        <div class="branding-subtitle">WORKFLOW SYSTEM</div>
       </div>
     </div>
 
     <!-- Navigation Links -->
-    <div style="padding: 20px 15px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1; overflow-y: auto;">
+    <nav class="sidebar-nav">
       
-      <!-- WORKFLOW MANAGEMENT -->
-      <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; padding-left: 10px; letter-spacing: 0.8px;">Workflows & Tasks</div>
+      <!-- 1. WORKSPACE (DAILY OPERATIONAL INBOX & EXECUTION) -->
+      <div class="nav-section-title">Workspace</div>
       
-      <a routerLink="/processes" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
-        <i class="pi pi-sitemap" style="color: #38bdf8;"></i> Workflows
+      <a routerLink="/my-tasks" routerLinkActive="active-menu-item" class="sidebar-link">
+        <i class="pi pi-check-square"></i> My Tasks
       </a>
 
       <a routerLink="/tasks" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-list-check" style="color: #38bdf8;"></i> Tasks
+        <i class="pi pi-list-check"></i> Process Executions
       </a>
 
-      <a routerLink="/my-tasks" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-check-square" style="color: #10b981;"></i> My Tasks
+      <!-- 2. WORKFLOWS (PROCESS DEFINITIONS & ASSIGNMENT) -->
+      <div class="nav-section-title" style="margin-top: 14px;">Workflows</div>
+
+      <a routerLink="/processes" routerLinkActive="active-menu-item" class="sidebar-link">
+        <i class="pi pi-sitemap"></i> Deployed Workflows
       </a>
 
       <a routerLink="/workflow-assignment" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
-        <i class="pi pi-sliders-h" style="color: #06b6d4;"></i> Assignment Engine
+        <i class="pi pi-sliders-h"></i> Assignment Engine
       </a>
 
+      <!-- 3. IDENTITY & ACCESS MANAGEMENT (ADMIN ONLY) -->
+      <ng-container *ngIf="authService.isAdmin()">
+        <div class="nav-section-title" style="margin-top: 14px;">Identity & Access</div>
+
+        <a routerLink="/admin/users" routerLinkActive="active-menu-item" class="sidebar-link">
+          <i class="pi pi-user"></i> User Directory
+        </a>
+        <a routerLink="/admin/groups" routerLinkActive="active-menu-item" class="sidebar-link">
+          <i class="pi pi-users"></i> Groups Pool
+        </a>
+        <a routerLink="/admin/tenants" routerLinkActive="active-menu-item" class="sidebar-link">
+          <i class="pi pi-building"></i> Tenants
+        </a>
+        <a routerLink="/admin/authorizations" routerLinkActive="active-menu-item" class="sidebar-link">
+          <i class="pi pi-shield"></i> Security Matrix
+        </a>
+      </ng-container>
+
+      <!-- 4. ACCOUNT & PREFERENCES -->
+      <div class="nav-section-title" style="margin-top: 14px;">Preferences</div>
       <a routerLink="/my-profile" routerLinkActive="active-menu-item" class="sidebar-link">
-        <i class="pi pi-user-edit" style="color: #38bdf8;"></i> My Profile
-      </a>
-
-      <!-- IAM & SECURITY -->
-      <div *ngIf="authService.isAdmin()" style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 20px; margin-bottom: 6px; padding-left: 10px; letter-spacing: 0.8px;">Identity & Access</div>
-
-      <a routerLink="/admin/users" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
-        <i class="pi pi-user"></i> User Directory
-      </a>
-      <a routerLink="/admin/groups" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
-        <i class="pi pi-users"></i> Groups Pool
-      </a>
-      <a routerLink="/admin/tenants" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
-        <i class="pi pi-building"></i> Tenants
-      </a>
-      <a routerLink="/admin/authorizations" routerLinkActive="active-menu-item" class="sidebar-link" *ngIf="authService.isAdmin()">
-        <i class="pi pi-shield"></i> Security Matrix
+        <i class="pi pi-user-edit"></i> My Profile
       </a>
       
-    </div>
+    </nav>
 
     <!-- Sidebar Footer (User Info) -->
-    <div style="padding: 16px; border-top: 1px solid #1e293b; display: flex; align-items: center; gap: 12px; background: #0b1329;">
-      <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #0284c7); color: #ffffff; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+    <div class="sidebar-footer">
+      <div class="user-avatar">
         {{ (authService.getCurrentUsername() || 'U') | slice:0:1 | uppercase }}
       </div>
       <div style="flex-grow: 1; overflow: hidden;">
-        <div style="font-size: 13px; font-weight: 600; color: #f8fafc; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ authService.getCurrentUsername() }}</div>
-        <div style="font-size: 11px; color: #10b981; font-weight: 500;">● Engine Connected</div>
+        <div class="user-info-name" [title]="authService.getCurrentUsername()">
+          {{ authService.getCurrentUsername() }}
+        </div>
+        <div class="user-info-status">
+          <span class="status-indicator-dot"></span> Online
+        </div>
       </div>
     </div>
     
-  </div>
+  </aside>
 
   <!-- RIGHT SIDE (Top Bar + Main Content Area) -->
-  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0; background: #0f172a;">
+  <div class="main-wrapper">
     
     <!-- TOP APP BAR -->
-    <div style="height: 64px; background-color: #1e293b; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); flex-shrink: 0;">
+    <header class="top-bar">
       
-      <!-- Left side of top bar -->
-      <div style="display: flex; align-items: center; gap: 15px;">
-        <i class="pi pi-bars" style="font-size: 1.2rem; color: #94a3b8; cursor: pointer;"></i>
-        <div style="color: #94a3b8; font-size: 13px; font-weight: 500;">
-          Engine API: <span style="color: #38bdf8; font-weight: 600;">http://localhost:8081/camundaWorkflow/engine-rest</span>
-        </div>
+      <!-- Left side: Clean engine connectivity status -->
+      <div class="engine-status-chip">
+        <span class="status-indicator-dot"></span>
+        <span style="font-weight: 600;">Engine Online</span>
       </div>
 
-      <!-- Right side of top bar -->
-      <div style="display: flex; align-items: center; gap: 20px;">
-        <button (click)="logout()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+      <!-- Right side: User pill + Logout -->
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <span class="badge badge-neutral" style="font-family: var(--font-mono);">
+          <i class="pi pi-user"></i> {{ authService.getCurrentUsername() }}
+        </span>
+        <button (click)="logout()" class="btn btn-secondary btn-sm" style="color: var(--danger-color); border-color: #FECACA;">
           <i class="pi pi-sign-out"></i> Logout
         </button>
       </div>
-    </div>
+    </header>
 
     <!-- MAIN CONTENT CANVAS -->
-    <div style="flex-grow: 1; overflow-y: auto; padding: 30px; background: #090d16;">
+    <main class="content-canvas">
       <router-outlet></router-outlet>
-    </div>
+    </main>
 
   </div>
 </div>

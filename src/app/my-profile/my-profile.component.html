@@ -1,32 +1,97 @@
-<h2>My Profile: <span style="color: #fd7e14;">{{ username || userId }}</span></h2>
-
-<div style="display: flex; border-bottom: 2px solid #ccc; margin-bottom: 20px;">
-  <button (click)="activeTab = 'Profile'" [style.borderBottom]="activeTab === 'Profile' ? '3px solid #fd7e14' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Personal Details</button>
-  <button (click)="activeTab = 'Account'" [style.borderBottom]="activeTab === 'Account' ? '3px solid #fd7e14' : 'none'" style="padding: 10px 20px; background: none; border: none; font-weight: bold; cursor: pointer; font-size: 16px;">Security</button>
-</div>
-
-<div *ngIf="activeTab === 'Profile'" style="max-width: 500px;">
-  <div *ngIf="profileMsg" style="color: white; background: #28a745; padding: 10px; border-radius: 4px; margin-bottom: 15px;">{{ profileMsg }}</div>
+<div class="profile-container">
   
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">First Name *</label>
-    <input type="text" [(ngModel)]="profile.firstName" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Last Name *</label>
-    <input type="text" [(ngModel)]="profile.lastName" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Email</label>
-    <input type="email" [(ngModel)]="profile.email" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  
-  <button (click)="updateProfile()" style="padding: 10px 20px; background-color: #fd7e14; color: white; border: none; border-radius: 4px; cursor: pointer;">Save My Profile</button>
-</div>
+  <div class="profile-header">
+    <h2 style="color: var(--text-main); font-size: 20px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+      <i class="pi pi-user" style="color: var(--primary-blue);"></i>
+      <span>My Account Profile</span>
+    </h2>
+    <p style="color: var(--text-muted); font-size: 13px; margin: 4px 0 0 0;">
+      Signed in as <code class="id-badge" style="color: var(--primary-blue); font-weight: 600;">{{ username || userId }}</code>
+    </p>
+  </div>
 
-<div *ngIf="activeTab === 'Account'" style="max-width: 500px;">
-  <div *ngIf="accountMsg" style="color: black; background: #ffc107; padding: 10px; border-radius: 4px; margin-bottom: 15px;">{{ accountMsg }}</div>
+  <div class="tab-nav">
+    <button (click)="activeTab = 'Profile'" 
+            class="tab-btn" 
+            [class.active]="activeTab === 'Profile'">
+      <i class="pi pi-id-card"></i> Personal Details
+    </button>
+    <button (click)="activeTab = 'Account'" 
+            class="tab-btn" 
+            [class.active]="activeTab === 'Account'">
+      <i class="pi pi-lock"></i> Security & Password
+    </button>
+  </div>
 
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">Current Password *</label>
-    <input type="password" [(ngModel)]="passwords.current" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 15px;"><label style="font-weight: bold; display: block;">New Password *</label>
-    <input type="password" [(ngModel)]="passwords.new" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  <div style="margin-bottom: 20px;"><label style="font-weight: bold; display: block;">Repeat New Password *</label>
-    <input type="password" [(ngModel)]="passwords.repeat" style="width: 100%; padding: 8px; box-sizing: border-box;" /></div>
-  
-  <button (click)="updatePassword()" style="padding: 10px 20px; background-color: #fd7e14; color: white; border: none; border-radius: 4px; cursor: pointer;">Change Password</button>
+  <!-- TAB 1: PERSONAL DETAILS -->
+  <div *ngIf="activeTab === 'Profile'" class="table-card" style="padding: 24px;">
+    
+    <div *ngIf="profileMsg" style="color: var(--success-color); background: var(--success-light); border: 1px solid #BBF7D0; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+      <i class="pi pi-check-circle"></i>
+      <span>{{ profileMsg }}</span>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">First Name *</label>
+          <input type="text" [(ngModel)]="profile.firstName" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; box-sizing: border-box;" />
+        </div>
+        <div>
+          <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">Last Name *</label>
+          <input type="text" [(ngModel)]="profile.lastName" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; box-sizing: border-box;" />
+        </div>
+      </div>
+
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">Email Address</label>
+        <input type="email" [(ngModel)]="profile.email" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; box-sizing: border-box;" />
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 8px; padding-top: 18px; border-top: 1px solid var(--border-color);">
+        <button (click)="updateProfile()" class="btn btn-primary">
+          <i class="pi pi-check"></i> Save Personal Details
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- TAB 2: SECURITY & PASSWORD -->
+  <div *ngIf="activeTab === 'Account'" class="table-card" style="padding: 24px;">
+    
+    <div *ngIf="accountMsg" style="color: var(--warning-color); background: var(--warning-light); border: 1px solid #FDE68A; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+      <i class="pi pi-info-circle"></i>
+      <span>{{ accountMsg }}</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">Current Password *</label>
+        <input type="password" [(ngModel)]="passwords.current" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">New Password *</label>
+        <input type="password" [(ngModel)]="passwords.new" placeholder="Min 8 chars, 1 uppercase, 1 symbol" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-main);">Confirm New Password *</label>
+        <input type="password" [(ngModel)]="passwords.repeat" style="width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 13px; box-sizing: border-box;" />
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 8px; padding-top: 18px; border-top: 1px solid var(--border-color);">
+        <button (click)="updatePassword()" class="btn btn-primary">
+          <i class="pi pi-lock"></i> Update Password
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
 </div>

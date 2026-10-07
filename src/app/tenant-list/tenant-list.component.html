@@ -1,19 +1,48 @@
-<div style="display: flex; justify-content: space-between; align-items: center;">
-  <h2>Tenant Management</h2>
-  <a routerLink="/admin/tenants/create" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">+ Create New Tenant</a>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h2 style="color: var(--text-main); font-size: 20px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+      <i class="pi pi-building" style="color: var(--primary-blue);"></i> Tenant Management
+    </h2>
+    <p style="color: var(--text-muted); font-size: 13px; margin: 4px 0 0 0;">
+      Multi-tenancy isolation and organizational units
+    </p>
+  </div>
+  <a routerLink="/admin/tenants/create" class="btn btn-primary btn-sm">
+    <i class="pi pi-plus"></i> Create New Tenant
+  </a>
 </div>
 
-<table border="1" cellpadding="10" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-  <tr style="background-color: #f8f9fa;">
-    <th>Tenant ID</th>
-    <th>Tenant Name</th>
-    <th>Action</th>
-  </tr>
-  <tr *ngFor="let tenant of tenants">
-    <td style="font-weight: bold;">{{ tenant.id }}</td>
-    <td>{{ tenant.name }}</td>
-    <td>
-      <a [routerLink]="['/admin/tenants/edit', tenant.id]" style="padding: 5px 10px; background-color: #ffc107; color: black; text-decoration: none; border-radius: 4px;">Edit</a>
-    </td>
-  </tr>
-</table>
+<div class="table-card">
+  <div class="table-scroll-container">
+    <table class="enterprise-table">
+      <thead>
+        <tr>
+          <th class="pinned-left" style="width: 240px;">Tenant ID</th>
+          <th>Tenant Name</th>
+          <th class="pinned-right" style="text-align: right; width: 120px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tenant of tenants">
+          <td class="pinned-left">
+            <span class="id-badge" style="font-weight: 600; color: var(--primary-blue);">{{ tenant.id }}</span>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--text-main);">{{ tenant.name }}</div>
+          </td>
+          <td class="pinned-right" style="text-align: right;">
+            <a [routerLink]="['/admin/tenants/edit', tenant.id]" class="btn btn-secondary btn-sm">
+              <i class="pi pi-pencil"></i> Edit
+            </a>
+          </td>
+        </tr>
+        <tr *ngIf="tenants.length === 0">
+          <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 40px 16px;">
+            <i class="pi pi-building" style="font-size: 2rem; color: var(--text-light); margin-bottom: 8px; display: block;"></i>
+            <div>No tenants found. Click "+ Create New Tenant" to add one.</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

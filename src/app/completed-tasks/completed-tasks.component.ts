@@ -28,6 +28,9 @@ export interface FormattedVariable {
   styleUrls: ['./completed-tasks.component.css']
 })
 export class CompletedTasksComponent implements OnInit, OnDestroy {
+  // Navigation View State: 'INSTANCES' | 'TASKS' | 'FORM_AUDIT' | 'TASK_DETAILS'
+  currentView: 'INSTANCES' | 'TASKS' | 'FORM_AUDIT' | 'TASK_DETAILS' = 'INSTANCES';
+
   // Level 1: Completed Instances State
   instances: any[] = [];
   filteredInstances: any[] = [];
@@ -42,25 +45,20 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
   pageSize: number = 20;
   currentPage: number = 1;
 
-  // View Navigation: 'INSTANCES' or 'TASKS'
-  currentView: 'INSTANCES' | 'TASKS' = 'INSTANCES';
-
   // Level 2: Instance Tasks State
   selectedInstance: any = null;
   instanceTasks: any[] = [];
   loadingTasks: boolean = false;
 
-  // Level 3: Task Details Modal State
+  // Level 3: Task Details State (Property Inspector)
   selectedTask: any = null;
-  showDetailsModal: boolean = false;
   loadingDetails: boolean = false;
   taskVariables: any[] = [];
   businessVariables: FormattedVariable[] = [];
   systemVariables: FormattedVariable[] = [];
   showSystemVars: boolean = false;
 
-  // Level 4: Completed Form Modal State
-  showFormModal: boolean = false;
+  // Level 4: Completed Form State (Dedicated View)
   loadingForm: boolean = false;
   hasFormSchema: boolean = false;
   formMessage: string = '';
@@ -71,12 +69,19 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadWorkflows();
-    // Initially load blank page - user must select status and click Filter
   }
 
   ngOnDestroy() {
+    this.destroyFormInstance();
+  }
+
+  private destroyFormInstance() {
     if (this.formInstance) {
-      this.formInstance.destroy();
+      try {
+        this.formInstance.destroy();
+      } catch (e) {
+        console.warn('Error destroying form instance:', e);
+      }
       this.formInstance = null;
     }
   }
@@ -134,12 +139,16 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
       if (this.hasFiltered) {
         this.loadCompletedInstances();
       }
-    } else {
+    } else if (this.currentView === 'TASKS') {
       this.viewInstanceTasks(this.selectedInstance);
+    } else if (this.currentView === 'FORM_AUDIT' && this.selectedTask) {
+      this.openFormAuditView(this.selectedTask);
+    } else if (this.currentView === 'TASK_DETAILS' && this.selectedTask) {
+      this.openTaskDetailsView(this.selectedTask);
     }
   }
 
-  // --- PAGINATION HELPERS (Max 20 instances per page) ---
+  // --- PAGINATION HELPERS ---
   get paginatedInstances(): any[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.instances.slice(start, start + this.pageSize);
@@ -199,12 +208,19 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
     this.currentView = 'INSTANCES';
     this.selectedInstance = null;
     this.instanceTasks = [];
+    this.selectedTask = null;
+    this.destroyFormInstance();
   }
 
-  // --- LEVEL 3: TASK DETAILS ---
-  openDetailsModal(task: any) {
+  backToTasks() {
+    this.currentView = 'TASKS';
+    this.destroyFormInstance();
+  }
+
+  // --- LEVEL 3: DEDICATED TASK DETAILS (PROPERTY INSPECTOR) ---
+  openTaskDetailsView(task: any) {
     this.selectedTask = task;
-    this.showDetailsModal = true;
+    this.currentView = 'TASK_DETAILS';
     this.loadingDetails = true;
     this.taskVariables = [];
     this.businessVariables = [];
@@ -224,22 +240,15 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
     });
   }
 
-  closeDetailsModal() {
-    this.showDetailsModal = false;
-    this.selectedTask = null;
-    this.taskVariables = [];
-    this.businessVariables = [];
-    this.systemVariables = [];
-    this.showSystemVars = false;
-  }
-
-  // --- LEVEL 4: VIEW COMPLETED FORM ---
-  openFormModal(task: any) {
-    this.showFormModal = true;
+  // --- LEVEL 4: DEDICATED FORM AUDIT VIEW (NO POPUPS) ---
+  openFormAuditView(task: any) {
+    this.selectedTask = task;
+    this.currentView = 'FORM_AUDIT';
     this.loadingForm = true;
     this.hasFormSchema = false;
     this.formMessage = '';
     this.formTaskData = {};
+    this.destroyFormInstance();
 
     this.http.get<any>(`http://localhost:8082/api/tasks/${task.id}/history-form`).subscribe({
       next: (resp) => {
@@ -248,9 +257,9 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
         this.formTaskData = resp.data || {};
 
         if (this.hasFormSchema && resp.schema) {
-          setTimeout(() => this.renderReadOnlyForm(resp.schema, resp.data), 100);
+          setTimeout(() => this.renderReadOnlyForm(resp.schema, resp.data), 80);
         } else {
-          this.formMessage = 'No visual form schema was defined for this task in the workflow definition.';
+          this.formMessage = 'No visual form schema was deployed for this task. Form inputs were saved directly as process variables.';
         }
       },
       error: (err) => {
@@ -268,9 +277,7 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
     container.innerHTML = '';
 
     try {
-      if (this.formInstance) {
-        this.formInstance.destroy();
-      }
+      this.destroyFormInstance();
       this.formInstance = new Form({
         container: container,
         properties: {
@@ -287,14 +294,6 @@ export class CompletedTasksComponent implements OnInit, OnDestroy {
       console.error('Failed to render Form-JS viewer:', err);
       this.hasFormSchema = false;
       this.formMessage = 'Error rendering form schema.';
-    }
-  }
-
-  closeFormModal() {
-    this.showFormModal = false;
-    if (this.formInstance) {
-      this.formInstance.destroy();
-      this.formInstance = null;
     }
   }
 

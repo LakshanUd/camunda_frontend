@@ -25,7 +25,7 @@ import { WorkflowAssignmentComponent } from './workflow-assignment/workflow-assi
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
 
-  { path: 'processes', component: ProcessesComponent, canActivate: [adminGuard] },
+  { path: 'processes', component: ProcessesComponent, canActivate: [authGuard] },
   { path: 'tasks', component: CompletedTasksComponent, canActivate: [authGuard] },
   { path: 'completed-tasks', redirectTo: '/tasks', pathMatch: 'full' },
   { path: 'workflow-tasks', redirectTo: '/tasks', pathMatch: 'full' },
